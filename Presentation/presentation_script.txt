@@ -1,0 +1,470 @@
+================================================================================
+AUTOMATED JOB APPLICATION TRACKER - FINAL YEAR PROJECT PRESENTATION SCRIPT
+COMP4801 | Junyoung BAE | 3035716464
+================================================================================
+
+================================================================================
+SLIDE 1 - TITLE
+================================================================================
+Good morning.
+My name is Junyoung Bae, and today I'll be presenting my Final Year Project: "Automated Job Application Tracker."
+
+This project focuses on helping job seekers automatically track and understand their post-application progress by analyzing job-related emails, while also providing insights and recommendations to manage applications more effectively.
+
+The system connects to a user's Gmail account, extracts job-related correspondence, and uses AI to classify each email into standardized recruitment stages - all without manual data entry.
+
+================================================================================
+SLIDE 2 - TABLE OF CONTENTS
+================================================================================
+I'll structure this presentation into four parts:
+First, the background and motivation behind the project.
+Second, the methodology and system design.
+Third, the tasks I've completed in the first semester.
+And finally, my plans for the second semester.
+
+================================================================================
+SLIDE 3 - BACKGROUND & MOTIVATION
+================================================================================
+Let's move on to background and motivation.
+
+So how did this project start?
+This project started from a personal need related to tracking job applications after applying.
+I then explored whether existing solutions effectively support this stage of the process.
+And I found that this area is largely underserved, which revealed a clear gap and business opportunity.
+
+In the next few slides, I'll briefly elaborate on these points.
+
+================================================================================
+SLIDE 4 - PERSONAL NEED
+================================================================================
+I'll start by elaborating on the personal need behind this project.
+
+Many job seekers, including myself, rely on Excel sheets or manual notes to track applications. As you can see in the screenshot, this involves manually entering company names, role titles, application dates, interview stages, and outcomes.
+
+While this works for a small number of applications, it does not scale well as the number increases. During a typical recruiting season, I was applying to 30 or more companies simultaneously, each with different assessment formats and timelines.
+
+Information becomes fragmented across emails, spreadsheets, and career portals, making it easy to miss interviews, coding assessments, or critical deadlines.
+
+This manual process also introduces unnecessary cognitive load and stress, especially during peak recruiting periods when responsiveness can determine whether you advance to the next stage.
+
+================================================================================
+SLIDE 5 - MARKET ANALYSIS
+================================================================================
+After identifying this personal pain point, I then examined whether existing platforms effectively support post-application tracking.
+
+As shown in the diagram, platforms such as LinkedIn, Glassdoor, and Indeed primarily focus on Stages 1 and 2 - job discovery and application submission. They help users find job postings and redirect them to company career portals.
+
+However, Stages 3 through 6 - resume screening, assessments, interviews, and final decisions - happen entirely within company systems. No existing solution automatically tracks application progress across different companies and stages.
+
+As a result, applicants must manually monitor their inbox and individual company portals, which is inefficient and error-prone.
+
+================================================================================
+SLIDE 6 - BUSINESS OPPORTUNITY
+================================================================================
+I believe this gap presents a strong opportunity.
+
+Based on a survey I conducted among university students, nearly 60% of job seekers do not systematically track their applications at all. Only about 24% use Excel sheets, and about 12% use calendars.
+
+For the majority who don't track, application information remains scattered across their inbox and personal notes. They rely on memory or searching through emails when needed.
+
+An automated system that reads job-related emails and organizes post-application progress in one place can significantly reduce effort and confusion for these users, improving visibility and enabling better decision-making throughout the job search journey.
+
+================================================================================
+SLIDE 7 - SOLUTION
+================================================================================
+To address the challenges discussed earlier, I propose JobTracker - an AI-powered web application designed to support job seekers after they submit applications.
+
+The core value proposition is simple: Connect your Gmail once, and we handle the rest automatically.
+
+The system scans your inbox, detects job-related emails, classifies them by recruitment stage, and visualizes your entire application pipeline - all without requiring any manual data entry.
+
+================================================================================
+SLIDE 8 - METHODOLOGY OVERVIEW
+================================================================================
+To build this system, I followed a structured, step-by-step methodology.
+
+This diagram provides a high-level overview of the five-stage approach:
+
+1. Requirement & Feature Decisions - defining the system scope and constraints
+2. Data & Pattern Analysis - understanding email patterns for classification
+3. Backend Pipeline Design - building secure email retrieval and AI processing
+4. Frontend Visualization & UX - creating intuitive dashboards
+5. Integration, Testing, and Deployment - bringing everything together
+
+Each stage transforms raw, unstructured email data into meaningful, actionable insights while maintaining usability and privacy.
+
+I'll walk through each stage and highlight the tasks accomplished.
+
+================================================================================
+SLIDE 9 - METHODOLOGY DIAGRAM (REQUIREMENTS HIGHLIGHTED)
+================================================================================
+I'll begin by explaining the requirement and feature decisions, which define the foundation of the entire system.
+
+================================================================================
+SLIDE 10 - REQUIREMENT & FEATURE DECISIONS
+================================================================================
+I separated the requirement and feature decisions into four key areas:
+
+1. Recruitment Stage Definitions - standardizing the pipeline stages
+2. Minimum Viable Product Features - identifying essential functionality
+3. Data Storage & Privacy Boundaries - establishing strict security constraints
+4. Evaluation Criteria - defining measurable success metrics
+
+These decisions helped keep the project focused, feasible, and aligned with real-world constraints from the beginning.
+
+================================================================================
+SLIDE 11 - RECRUITMENT STAGE DEFINITIONS
+================================================================================
+First, I had to define recruitment stages since they vary widely across companies.
+
+I standardized them into eight distinct stages, each linked to specific email signals that enable automated classification:
+
+1. Application Submitted - triggered by phrases like "thank you for applying" or "we've received your application"
+
+2. Aptitude Test - detected through mentions of platforms like Plum, Pymetrics, SHL, or Wonderlic, and keywords like "psychometric assessment" or "personality assessment"
+
+3. Simulation Test - identified by references to Forage, "virtual experience," or "job simulation"
+
+4. Coding Test - recognized through HackerRank, Codility, CodeSignal mentions, or phrases like "technical assessment" or "coding challenge"
+
+5. Video Interview - detected via HireVue, Willo, SparkHire, or "pre-recorded video interview"
+
+6. Human Interview - triggered by "interview scheduled," "assessment centre," "super day," or "speak with you"
+
+7. Offer - identified by "pleased to offer," "offer letter," or "congratulations"
+
+8. Rejection - detected through "unfortunately," "not proceed," "will not be moving forward," or "regret to inform"
+
+These patterns are directly implemented as regex rules in the backend classification system.
+
+================================================================================
+SLIDE 12 - MVP FEATURES
+================================================================================
+For the MVP, I focused on essential features that deliver the core value proposition:
+
+CORE FEATURES (implemented):
+- One-click Gmail OAuth 2.0 authentication
+- Automated email scanning with configurable date range selection
+- AI-powered company name extraction and stage classification
+- Dashboard with real-time application statistics
+- Visual pipeline representation using Sankey diagrams and funnel charts
+- Application timeline view showing chronological progression
+- Real-time processing progress indicators with 6-step animation
+
+PLANNED FEATURES (this semester):
+- Manual application entry for non-email applications
+- CV analysis for personalized insights
+- AI chatbot for application guidance
+
+DEFERRED FEATURES (future versions):
+- Interview calendar integration
+- Email notifications for stage changes
+- Export functionality (CSV, PDF reports)
+- Multi-email provider support (Outlook, Yahoo)
+
+This prioritization ensures the MVP delivers immediate value while remaining achievable within the project timeline.
+
+================================================================================
+SLIDE 13 - DATA STORAGE & PRIVACY BOUNDARIES
+================================================================================
+Privacy was a major design constraint that influenced every architectural decision.
+
+DATA STORED (with user consent):
+- OAuth tokens: Stored server-side on Render, session-based, cleared on logout
+- Extracted metadata: Stored in local JSON cache with date-range tracking
+- Company names, stage classifications, application dates: Permanent local cache
+
+DATA NOT STORED (privacy constraints):
+- Raw email body content - processed only in memory, never persisted
+- Email attachments - completely excluded from processing
+- Personal identifiable information beyond email address
+- Passwords or credentials
+
+This privacy-first architecture ensures users maintain control over their sensitive data while still benefiting from automated tracking.
+
+================================================================================
+SLIDE 14 - EVALUATION CRITERIA
+================================================================================
+I defined clear, measurable evaluation metrics to objectively assess system performance:
+
+1. Stage Classification Accuracy: Target >85%
+   - Measurement: Manual verification against 50+ labeled emails
+
+2. Company Extraction Accuracy: Target >90%
+   - Measurement: Cross-reference with known applications
+
+3. False Positive Rate (non-job emails incorrectly classified): Target <5%
+   - Measurement: Count misclassified emails / total processed
+
+4. Processing Latency: Target <60 seconds for 100 emails
+   - Measurement: Timestamp comparison from start to dashboard render
+
+5. Cache Hit Performance: Target <2 seconds
+   - Measurement: Response time for previously processed data
+
+These metrics allow quantitative evaluation and continuous improvement of the system.
+
+================================================================================
+SLIDE 15 - METHODOLOGY DIAGRAM (DATA ANALYSIS HIGHLIGHTED)
+================================================================================
+Next, let's move on to the data analysis stage.
+
+================================================================================
+SLIDE 16 - DATA & PATTERN ANALYSIS
+================================================================================
+Data and pattern analysis is critical because the system operates on raw email data, which is unstructured, noisy, and highly variable across different companies and ATS platforms.
+
+Before any visualization or insight can be generated, this data must first be transformed into structured, machine-readable information.
+
+I designed a TWO-LAYER CLASSIFICATION STRATEGY:
+
+LAYER A: FAST FILTER (Rule-Based)
+Purpose: Quickly eliminate non-job emails and pre-classify obvious cases using deterministic rules.
+
+The implementation includes:
+- SKIP_PATTERNS: Regex patterns to exclude noise like support tickets, marketing emails from Forage, newsletters, and event reminders
+- STAGE_PATTERNS: 40+ regex patterns covering all 8 recruitment stages for high-confidence pre-detection
+
+This layer reduces the volume of emails requiring expensive AI processing by approximately 70%.
+
+LAYER B: AI REFINEMENT (LLM-Based)
+Purpose: Handle ambiguous cases, extract company names from complex ATS emails, and provide nuanced stage classification.
+
+Model: Azure OpenAI GPT-4o-mini
+- Compact prompt format to minimize token usage
+- JSON output schema for structured extraction
+- Two-pass approach for complex multi-stage emails
+
+The output is a structured JSON object containing:
+- Position title
+- Application submission date
+- Test dates (aptitude, simulation, coding, video)
+- Number of human interviews
+- Final status (accepted/rejected/pending)
+
+This hybrid approach balances speed, cost, and accuracy - achieving roughly 90% accuracy on pre-detection while reserving expensive AI calls for genuinely ambiguous cases.
+
+================================================================================
+SLIDE 17 - METHODOLOGY DIAGRAM (BACKEND HIGHLIGHTED)
+================================================================================
+The third stage is backend pipeline design.
+
+================================================================================
+SLIDE 18 - BACKEND PIPELINE DESIGN
+================================================================================
+This slide shows the end-to-end backend architecture I implemented.
+
+The system consists of three main components:
+
+1. FRONTEND (React)
+   - Dashboard with real-time visualizations
+   - Charts built with Plotly.js and Recharts
+   - Server-Sent Events (SSE) for live progress updates
+
+2. RENDER BACKEND (gmail_backend.py)
+   - OAuth 2.0 handler for Gmail authentication
+   - Token storage (server-side for security)
+   - /query endpoint for paginated email fetching
+
+3. LOCAL PROCESSING SERVER (local_server.py)
+   - Flask server running on localhost:5001
+   - Executes firstfilter.py logic for company extraction
+   - Executes secondfilter.py logic for stage classification
+   - Permanent JSON cache with date-range metadata
+
+PROCESSING PIPELINE FLOW:
+OAuth Login → Token Store → Cache Check →
+(Cache Hit → Immediate Response) | (Cache Miss → Gmail Query) →
+Fetch Messages → Parse Headers → Extract Body →
+Layer A Filter (Regex) → Layer B AI (GPT-4o-mini) →
+Stage Classification → Company Grouping → Cache Write → Response
+
+The caching layer is particularly important - it stores processed results permanently with date-range metadata, enabling:
+- Instant response for previously processed date ranges
+- Incremental updates when users extend their search window
+- User isolation via email-based cache keys
+
+This hybrid architecture balances security (OAuth on Render), performance (local processing), and cost efficiency (intelligent caching).
+
+================================================================================
+SLIDE 19 - METHODOLOGY DIAGRAM (FRONTEND HIGHLIGHTED)
+================================================================================
+After backend development, I began frontend visualization.
+
+================================================================================
+SLIDE 20 - FRONTEND VISUALIZATION & UX DELIVERY
+================================================================================
+On the front end, I focused on clarity, usability, and immediate feedback.
+
+The dashboard consists of several key components:
+
+1. STATS OVERVIEW
+   - Total applications count
+   - Active applications (in progress)
+   - Interviews received
+   - Conversion rate percentage
+
+2. APPLICATION FLOW (Sankey Diagram)
+   - Visual flow from Applied → Assessment → Interview → Offer/Rejected/Pending
+   - Built with Plotly.js for interactive hover effects
+   - Shows volume at each stage transition
+
+3. APPLICATION FUNNEL
+   - Conversion rates between stages
+   - Color-coded by stage type
+   - Helps identify where applications typically drop off
+
+4. APPLICATION JOURNEY (Timeline)
+   - Chronological view per company
+   - Shows progression through stages with dates
+   - Visual indicators for current status
+
+5. PERFORMANCE ANALYTICS
+   - Response rate metrics
+   - Average response time
+   - Application-to-interview ratio
+   - AI-generated insights
+
+6. REAL-TIME PROGRESS INDICATORS
+   - 6-step animated loading sequence
+   - SSE streaming for live updates
+   - Step indicators: Fetching → Scanning → Detecting → Analyzing → Classifying → Building
+
+The interface also includes a chatbot widget placeholder for the planned AI assistant feature.
+
+================================================================================
+SLIDE 21 - PRODUCT DEMO
+================================================================================
+I'd like to show you a live demonstration of the product I have built so far.
+
+[DEMO FLOW]:
+1. Start on the landing page - show the marketing content and value proposition
+2. Click "Connect Gmail" - OAuth popup appears
+3. Authenticate with Google - demonstrate the secure OAuth flow
+4. Return to dashboard - show the date range selector
+5. Click "Process" - watch the 6-step progress animation in real-time
+6. Show SSE streaming - progress updates appear as backend processes
+7. Dashboard populates - walk through each visualization component
+8. Interact with Sankey diagram - hover over flows to see details
+9. Show timeline view - demonstrate filtering by company
+10. Demonstrate cache hit - re-process to show instant response
+
+================================================================================
+SLIDE 22 - TASKS ACCOMPLISHED
+================================================================================
+By the end of the first semester, the following components are complete:
+
+SCOPE & STAGE DEFINITION (100% Complete)
+- Defined 8 standardized recruitment stages
+- Established evaluation criteria
+- Set privacy boundaries
+
+DATA & PATTERN ANALYSIS (100% Complete)
+- Implemented 40+ regex patterns for stage detection
+- Built SKIP_PATTERNS for noise filtering
+- Designed two-layer classification strategy
+
+BACKEND PIPELINE DESIGN (100% Complete)
+- Gmail OAuth 2.0 integration (gmail_backend.py)
+- Email processing pipeline (local_server.py)
+- Company extraction (firstfilter.py)
+- Stage classification (secondfilter.py)
+- Permanent caching with date-range metadata
+- SSE streaming for real-time progress
+
+VISUALIZATION & UX (70% Complete)
+- Dashboard with StatsOverview component
+- Sankey diagram and funnel chart
+- Application timeline
+- Performance analytics
+- Real-time progress animation
+- Remaining: Manual entry, CV analysis, chatbot
+
+INTEGRATION & DEPLOYMENT (0% Complete)
+- To be completed in second semester
+
+================================================================================
+SLIDE 23 - FUTURE PLANS
+================================================================================
+In the second semester, my focus will be on three main areas:
+
+1. COMPLETING VISUALIZATION & UX (30% remaining)
+   - Manual application entry form for non-email applications
+   - CV/resume analysis for personalized insights
+   - AI chatbot integration for guided assistance
+
+2. INTEGRATION, TESTING, AND DEPLOYMENT
+   - Full system integration testing
+   - Error handling improvements
+   - Performance optimization
+   - AWS deployment for production use
+   - User acceptance testing with real job seekers
+
+3. EVALUATION & DOCUMENTATION
+   - Measure against defined evaluation criteria
+   - Collect user feedback
+   - Final project report and documentation
+
+The goal is to have a production-ready application that can be used by actual job seekers during the next recruiting season.
+
+================================================================================
+SLIDE 24 - THANK YOU & Q&A
+================================================================================
+Thank you for listening.
+
+I'm happy to answer any questions about the system architecture, AI classification approach, privacy considerations, or any other aspect of the project.
+
+================================================================================
+APPENDIX - TECHNICAL IMPLEMENTATION DETAILS
+================================================================================
+
+KEY FILES IN THE CODEBASE:
+
+Backend:
+- backend/gmail_backend.py - OAuth handler, deployed on Render
+- backend/local_server.py - Main processing server with SSE streaming
+- backend/firstfilter.py - Email fetching + GPT-based company extraction
+- backend/secondfilter.py - Two-layer stage classification
+
+Frontend:
+- frontend/src/pages/dashboard/page.tsx - Main dashboard container
+- frontend/src/pages/dashboard/components/
+  - Header.tsx
+  - StatsOverview.tsx
+  - SankeyDiagram.tsx (Plotly.js)
+  - ApplicationFunnel.tsx
+  - ApplicationTimeline.tsx
+  - PerformanceAnalytics.tsx
+  - ChatbotWidget.tsx
+
+TECHNOLOGY STACK:
+- Frontend: React 19, TypeScript, Vite, Tailwind CSS, Plotly.js, Recharts
+- Backend: Python 3.x, Flask, Azure OpenAI (GPT-4o-mini)
+- APIs: Google Gmail API, OAuth 2.0
+- Deployment: Render (OAuth), localhost (processing)
+
+SAMPLE STAGE DETECTION PATTERNS (from secondfilter.py):
+
+application_submitted:
+  - r"thank you for (applying|your application)"
+  - r"we've received your application"
+
+aptitude_test:
+  - r"plum", r"pymetrics", r"shl\.com"
+  - r"psychometric", r"personality.*assessment"
+
+coding_test:
+  - r"hackerrank", r"codesignal", r"codility"
+  - r"coding.*(test|assessment|challenge)"
+
+rejection:
+  - r"not.*(proceed|move forward)"
+  - r"unfortunately", r"regret to inform"
+
+offer:
+  - r"(pleased|delighted) to offer"
+  - r"offer letter", r"congratulations.*offer"
+
+================================================================================
+END OF PRESENTATION SCRIPT
+================================================================================

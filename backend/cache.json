@@ -1,0 +1,440 @@
+{
+  "justinthejeon@gmail.com": {
+    "earliest_date": "2025-06-01",
+    "latest_date": "2026-01-12",
+    "companies": [
+      {
+        "name": "Goldman Sachs",
+        "positions": [
+          {
+            "position": "2026 | APEJ | Hong Kong | Wealth Management, Private Wealth Management | Seasonal/Off Cycle Internship",
+            "application_submitted": "2025-12-09",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": "2025-12-10",
+            "num_human_interview": "0",
+            "app_accepted": null
+          },
+          {
+            "position": "2025 | APEJ | Hong Kong | Global Investment Research",
+            "application_submitted": "2025-09-11",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": "n"
+          }
+        ],
+        "email_count": 14
+      },
+      {
+        "name": "UBS",
+        "positions": [
+          {
+            "position": "2026 Off-cycle Internship - Global Markets",
+            "application_submitted": "2025-07-30",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": "2025-08-05",
+            "num_human_interview": "0",
+            "app_accepted": "n"
+          },
+          {
+            "position": "2026 Off-cycle Internship - Global Banking",
+            "application_submitted": "2025-07-30",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": "2025-08-05",
+            "num_human_interview": "0",
+            "app_accepted": null
+          },
+          {
+            "position": "2026 Summer Internship - Global Markets",
+            "application_submitted": "2025-07-30",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": "2025-10-03",
+            "num_human_interview": "0",
+            "app_accepted": null
+          },
+          {
+            "position": "2025 Global Markets Insight Day",
+            "application_submitted": "2025-08-01",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": "2025-08-03",
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 41
+      },
+      {
+        "name": "Macquarie Group",
+        "positions": [
+          {
+            "position": "Off-cycle Intern | Client Solutions Group",
+            "application_submitted": "2025-11-25",
+            "aptitude_test": "2025-12-10",
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": "n"
+          },
+          {
+            "position": "Off-cycle Intern | Real Assets",
+            "application_submitted": "2025-11-29",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 30
+      },
+      {
+        "name": "Wells Fargo",
+        "positions": [
+          {
+            "position": "APAC Markets Summer Analyst - Hong Kong",
+            "application_submitted": "2025-08-12",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": "n"
+          }
+        ],
+        "email_count": 7
+      },
+      {
+        "name": "Jane Street",
+        "positions": [
+          {
+            "position": "position at Jane Street",
+            "application_submitted": "2025-12-01",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": "n"
+          }
+        ],
+        "email_count": 19
+      },
+      {
+        "name": "Adams Street Partners",
+        "positions": [
+          {
+            "position": "Intern, Investor Relations (Seoul)",
+            "application_submitted": "2025-12-16",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          },
+          {
+            "position": "Early Careers",
+            "application_submitted": "2025-12-17",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": "n"
+          }
+        ],
+        "email_count": 18
+      },
+      {
+        "name": "Barclays",
+        "positions": [
+          {
+            "position": "Sales, Trading and Structuring Summer Internship Programme 2026",
+            "application_submitted": "2025-07-07",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": "n"
+          }
+        ],
+        "email_count": 8
+      },
+      {
+        "name": "Soci\u00e9t\u00e9 G\u00e9n\u00e9rale",
+        "positions": [
+          {
+            "position": "2026 H1 Soci\u00e9t\u00e9 G\u00e9n\u00e9rale Korea Trainee-25000",
+            "application_submitted": "2025-11-03",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 3
+      },
+      {
+        "name": "BNY",
+        "positions": [
+          {
+            "position": "2026 BNY Summer Internship Program - Asset Servicing",
+            "application_submitted": "2025-09-24",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          },
+          {
+            "position": "BNY Summer Internship Program - Market",
+            "application_submitted": "2025-09-24",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 6
+      },
+      {
+        "name": "PIMCO",
+        "positions": [
+          {
+            "position": "2026 Summer Internship \u2013 Account Analyst, APAC - Singapore, Hong Kong, Taiwan & Shanghai",
+            "application_submitted": "2025-10-27",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 2
+      },
+      {
+        "name": "Deutsche Bank",
+        "positions": [
+          {
+            "position": "2026 Deutsche Bank Summer Internship Programme - Investment Bank: Fixed Income & Currencies",
+            "application_submitted": "2025-08-12",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 25
+      },
+      {
+        "name": "Capital Group",
+        "positions": [
+          {
+            "position": "CAP Summer Associate - Asia (2026)",
+            "application_submitted": "2025-09-24",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": "n"
+          }
+        ],
+        "email_count": 19
+      },
+      {
+        "name": "Standard Chartered",
+        "positions": [
+          {
+            "position": "Global Banking Graduate Programme Korea 2026",
+            "application_submitted": "2025-09-17",
+            "aptitude_test": "2025-09-08",
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": null
+          },
+          {
+            "position": "Standard Chartered \u2013 Application update",
+            "application_submitted": "2025-09-23",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 16
+      },
+      {
+        "name": "Grupo Santander",
+        "positions": [
+          {
+            "position": "Santander CIB 2026 Summer Internship Program - Global Markets - Asia",
+            "application_submitted": "2025-08-29",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 1
+      }
+    ],
+    "total_companies": 14,
+    "total_applications": 22,
+    "timestamp": 1768229038.395318
+  },
+  "jybae0127@gmail.com": {
+    "earliest_date": "2025-10-13",
+    "latest_date": "2026-01-13",
+    "companies": [
+      {
+        "name": "Barclays",
+        "positions": [
+          {
+            "position": "",
+            "application_submitted": "2026-01-12",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 1
+      },
+      {
+        "name": "UBS",
+        "positions": [
+          {
+            "position": "2026 Graduate Talent Program - Group Ops & Technology Office - HK",
+            "application_submitted": "2026-01-09",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": "2026-01-09",
+            "num_human_interview": "0",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 1
+      },
+      {
+        "name": "Bloomberg",
+        "positions": [
+          {
+            "position": "2026 Analytics & Sales Programme (Korean Speakers)",
+            "application_submitted": "2025-10-30",
+            "aptitude_test": null,
+            "simulation_test": "2025-11-01",
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": null
+          },
+          {
+            "position": "2026 Entry Level Data Management Professional - Mandarin or Korean Speaker - Hong Kong",
+            "application_submitted": "2026-01-08",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 30
+      },
+      {
+        "name": "BlackRock",
+        "positions": [
+          {
+            "position": "2026 Full-Time Analyst Program - Technology - Sales & Relationship Management - FinTech Platform - Aladdin Wealth Tech - Hong Kong",
+            "application_submitted": "2025-10-15",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": "n"
+          },
+          {
+            "position": "2026 Full-Time Analyst Program - Technology - Analytics & Modeling - Hong Kong",
+            "application_submitted": "2025-10-30",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": null,
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": "n"
+          }
+        ],
+        "email_count": 13
+      },
+      {
+        "name": "HSBC",
+        "positions": [
+          {
+            "position": "Engineering - Graduate - Hong Kong SAR",
+            "application_submitted": "2025-10-13",
+            "aptitude_test": null,
+            "simulation_test": "2025-11-27",
+            "coding_test": "2025-10-13",
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 10
+      },
+      {
+        "name": "ION Group",
+        "positions": [
+          {
+            "position": "Rotational Analyst, 2026 Leadership Development Program",
+            "application_submitted": "2025-11-11",
+            "aptitude_test": null,
+            "simulation_test": null,
+            "coding_test": "2025-11-22",
+            "video_interview": null,
+            "num_human_interview": "1",
+            "app_accepted": null
+          }
+        ],
+        "email_count": 7
+      }
+    ],
+    "total_companies": 6,
+    "total_applications": 8,
+    "timestamp": 1768268088.003082
+  }
+}
