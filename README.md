@@ -2,6 +2,12 @@
 
 AI-powered job application tracker that automatically extracts and organizes your job applications from Gmail.
 
+## The Problem
+
+![Job Application Process](frontend/public/main_page_img3.png)
+
+Existing platforms like LinkedIn and Glassdoor help you discover job opportunities, but no solution automatically tracks your application progress across different companies and stages.
+
 ## Features
 
 - **Gmail Integration** - One-click OAuth connection to scan your emails
@@ -59,7 +65,17 @@ python local_server.py
 
 ## Screenshots
 
-Dashboard with application statistics, Sankey diagram, and timeline view.
+### Application Funnel & Journey Timeline
+
+![Dashboard - Funnel and Timeline](frontend/public/main_page_img1.png)
+
+Track your applications through each stage with the funnel view, and see your complete application journey with company-by-company progress tracking.
+
+### Performance Analytics & AI Insights
+
+![Dashboard - Analytics](frontend/public/main_page_img2.png)
+
+Get insights into your job search performance including response rates, average response times, and AI-powered recommendations.
 
 ## License
 
