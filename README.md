@@ -65,6 +65,12 @@ python local_server.py
 
 ## Screenshots
 
+### Homepage
+
+![Homepage](homepage_screenshot.png)
+
+The main landing page where users can connect their Gmail account and start tracking their job applications.
+
 ### Application Funnel & Journey Timeline
 
 ![Dashboard - Funnel and Timeline](frontend/public/main_page_img1.png)
