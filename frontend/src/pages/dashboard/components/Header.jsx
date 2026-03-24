@@ -2,12 +2,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserInfo, logout } from '../../../services/api';
+import SettingsModal from '../../../components/SettingsModal';
+import HelpModal from '../../../components/HelpModal';
 
 export default function Header({ isGmailConnected, onGmailConnect, onRefresh, onSignOut, onDateRangeClick, loading, processing }) {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Fetch user info when Gmail is connected
   useEffect(() => {
@@ -36,6 +40,7 @@ export default function Header({ isGmailConnected, onGmailConnect, onRefresh, on
   const userName = userEmail ? userEmail.split('@')[0] : 'User';
 
   return (
+  <>
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
@@ -118,14 +123,14 @@ export default function Header({ isGmailConnected, onGmailConnect, onRefresh, on
                     <p className="text-sm font-medium text-gray-900">{userName}</p>
                     <p className="text-xs text-gray-500 truncate">{userEmail || 'Not connected'}</p>
                   </div>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                  <button onClick={() => { setShowUserMenu(false); setShowSettings(true); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                     <i className="ri-settings-line mr-2"></i>
                     Settings
-                  </a>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                  </button>
+                  <button onClick={() => { setShowUserMenu(false); setShowHelp(true); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                     <i className="ri-question-line mr-2"></i>
                     Help & Support
-                  </a>
+                  </button>
                   <div className="border-t border-gray-100 mt-2 pt-2">
                     <button
                       onClick={handleSignOut}
@@ -143,5 +148,9 @@ export default function Header({ isGmailConnected, onGmailConnect, onRefresh, on
         </div>
       </div>
     </header>
+
+    {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onSignOut={onSignOut} />}
+    {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+  </>
   );
 }

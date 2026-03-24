@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGmailPopup from "../../hooks/useGmailPopup";
 import { checkAuthStatus, getUserInfo, logout } from "../../../services/api";
+import SettingsModal from "../../../components/SettingsModal";
+import HelpModal from "../../../components/HelpModal";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -13,6 +15,8 @@ export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Check Gmail connection status on mount and listen for auth success
   useEffect(() => {
@@ -67,6 +71,7 @@ export default function Header() {
   const userName = userEmail ? userEmail.split('@')[0] : 'User';
 
   return (
+  <>
     <header className="bg-white border-b border-gray-100">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center justify-between h-20">
@@ -107,14 +112,14 @@ export default function Header() {
                     <i className="ri-dashboard-line mr-2"></i>
                     Go to Dashboard
                   </button>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                  <button onClick={() => { setShowUserMenu(false); setShowSettings(true); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                     <i className="ri-settings-line mr-2"></i>
                     Settings
-                  </a>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                  </button>
+                  <button onClick={() => { setShowUserMenu(false); setShowHelp(true); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                     <i className="ri-question-line mr-2"></i>
                     Help & Support
-                  </a>
+                  </button>
                   <div className="border-t border-gray-100 mt-2 pt-2">
                     <button
                       onClick={handleSignOut}
@@ -140,5 +145,9 @@ export default function Header() {
         </div>
       </div>
     </header>
+
+    {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onSignOut={() => { setIsGmailConnected(false); setUserEmail(null); }} />}
+    {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+  </>
   );
 }
