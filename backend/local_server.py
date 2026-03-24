@@ -12,11 +12,15 @@ import json
 import time
 import hashlib
 import requests
+import io
 from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 import queue
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import AzureOpenAI
+import PyPDF2
+from docx import Document
 
 app = Flask(__name__)
 CORS(app)
@@ -662,6 +666,137 @@ def cache_info():
     })
 
 
+def process_single_company(company, all_emails, date_filter, emit, idx, total):
+    """Process a single company's emails and return a result dict, or None to skip."""
+    company_query = build_strict_query(company, all_emails, date_filter)
+    company_raw_emails = fetch_emails_from_render(company_query)
+    company_emails = validate_emails_for_company(company, company_raw_emails)
+
+    if not company_emails:
+        return None
+
+    filtered = [e for e in company_emails if not should_skip(e)]
+    filtered.sort(key=lambda x: parse_date(x.get("date", "")) or "9999")
+    unique = deduplicate_emails(filtered)
+
+    if not unique:
+        return None
+
+    # Pre-detect stages
+    pre_detected = {
+        "application_submitted": None,
+        "aptitude_test": None,
+        "simulation_test": None,
+        "coding_test": None,
+        "video_interview": None,
+        "human_interview_dates": [],
+        "rejection": None,
+        "offer": None,
+    }
+
+    for email in unique:
+        date = parse_date(email.get("date", ""))
+        stages = detect_stages(email)
+        for stage in stages:
+            if stage == "human_interview":
+                if date and date not in pre_detected["human_interview_dates"]:
+                    pre_detected["human_interview_dates"].append(date)
+            elif stage in pre_detected:
+                if date and pre_detected[stage] is None:
+                    pre_detected[stage] = date
+
+    compact_text = format_compact(unique[:15])
+
+    pre_detected_hints = []
+    if pre_detected["rejection"]:
+        pre_detected_hints.append(f"REJECTION detected on {pre_detected['rejection']}")
+    if pre_detected["offer"]:
+        pre_detected_hints.append(f"OFFER detected on {pre_detected['offer']}")
+    pre_hint_str = "\n".join(pre_detected_hints) if pre_detected_hints else ""
+
+    analysis_prompt = f"""Analyze job application emails for "{company}".
+
+EMAILS (date | sender | subject [pre-detected stages]):
+{compact_text}
+
+{f"PRE-DETECTED STATUS: {pre_hint_str}" if pre_hint_str else ""}
+
+CRITICAL RULES:
+1. POSITION: Extract the actual JOB TITLE (e.g., "Graduate Software Engineer", "Analyst Program 2026", "Data Scientist").
+   - Look for patterns like "applying for [POSITION]", "application for [POSITION]", "Thank you for applying to [POSITION]"
+   - NEVER use generic phrases like "Thank you for your application", "We've received your application", "role at X"
+
+2. MULTIPLE POSITIONS: If the candidate applied to MULTIPLE different positions at this company, return ALL of them as separate entries in the "positions" array. Each position should have its own timeline and status.
+
+3. "video_interview" = ONE-WAY pre-recorded video (HireVue, Willo) only. Phone calls and live video calls are human_interviews.
+
+4. Count human interviews: same event on same day = 1, different days = multiple. "Super Day" = 1 event.
+
+5. "status": For EACH position separately - "rejected" if that specific position was rejected, "offer" if offered, "pending" otherwise.
+
+OUTPUT JSON only (array of positions):
+{{"positions":[{{"position":"Job Title","applied":"YYYY-MM-DD","aptitude_test":"YYYY-MM-DD or null","simulation_test":"YYYY-MM-DD or null","coding_test":"YYYY-MM-DD or null","video_interview":"YYYY-MM-DD or null","human_interviews":N,"status":"pending|rejected|offer"}}]}}"""
+
+    try:
+        analysis = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": "You are a precise job application timeline extractor. Output valid JSON only."},
+                {"role": "user", "content": analysis_prompt}
+            ],
+            temperature=0.1
+        )
+
+        result = extract_json(analysis.choices[0].message.content or "")
+        positions = result.get("positions", [])
+
+        if not positions and result.get("position"):
+            positions = [result]
+
+        if not positions:
+            return None
+
+        final_positions = []
+        for i, pos in enumerate(positions):
+            position_name = pos.get("position", "")
+            if any(bad in position_name.lower() for bad in BAD_POSITION_PATTERNS):
+                position_name = ""
+
+            use_predetected = (i == 0)
+
+            final_pos = {
+                "position": position_name,
+                "application_submitted": pos.get("applied") or (pre_detected["application_submitted"] if use_predetected else None),
+                "aptitude_test": pos.get("aptitude_test") if pos.get("aptitude_test") not in [None, "null", ""] else (pre_detected["aptitude_test"] if use_predetected else None),
+                "simulation_test": pos.get("simulation_test") if pos.get("simulation_test") not in [None, "null", ""] else (pre_detected["simulation_test"] if use_predetected else None),
+                "coding_test": pos.get("coding_test") if pos.get("coding_test") not in [None, "null", ""] else (pre_detected["coding_test"] if use_predetected else None),
+                "video_interview": pos.get("video_interview") if pos.get("video_interview") not in [None, "null", ""] else (pre_detected["video_interview"] if use_predetected else None),
+                "num_human_interview": str(pos.get("human_interviews", 0) or (len(pre_detected["human_interview_dates"]) if use_predetected else 0)),
+                "app_accepted": (
+                    "y" if pos.get("status") == "offer" else
+                    ("n" if pos.get("status") == "rejected" else None)
+                )
+            }
+
+            for key in final_pos:
+                if final_pos[key] == "null":
+                    final_pos[key] = None
+
+            final_positions.append(final_pos)
+
+        if final_positions:
+            return {
+                "name": company,
+                "positions": final_positions,
+                "email_count": len(company_emails)
+            }
+
+    except Exception as e:
+        print(f"  ❌ Error analyzing {company}: {e}")
+
+    return None
+
+
 def process_with_progress(start_date, end_date, progress_callback=None):
     """
     Core processing logic that can emit progress events.
@@ -788,141 +923,28 @@ Output JSON: {{"clean_companies": ["Company1", "Company2", ...]}}"""
         # STEP 4: AI ANALYZING (per company)
         # =========================
         results = []
+        completed = 0
         total_companies = len(companies)
 
-        for idx, company in enumerate(companies):
-            emit(3, f"AI analyzing {company}... ({idx + 1}/{total_companies})", {
-                "current_company": company,
-                "progress": idx + 1,
-                "total": total_companies
-            })
-
-            company_query = build_strict_query(company, all_emails, date_filter)
-            company_raw_emails = fetch_emails_from_render(company_query)
-            company_emails = validate_emails_for_company(company, company_raw_emails)
-
-            if not company_emails:
-                continue
-
-            filtered = [e for e in company_emails if not should_skip(e)]
-            filtered.sort(key=lambda x: parse_date(x.get("date", "")) or "9999")
-            unique = deduplicate_emails(filtered)
-
-            if not unique:
-                continue
-
-            # Pre-detect stages
-            pre_detected = {
-                "application_submitted": None,
-                "aptitude_test": None,
-                "simulation_test": None,
-                "coding_test": None,
-                "video_interview": None,
-                "human_interview_dates": [],
-                "rejection": None,
-                "offer": None,
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {
+                executor.submit(process_single_company, company, all_emails, date_filter, emit, idx, total_companies): company
+                for idx, company in enumerate(companies)
             }
+            for future in as_completed(futures):
+                completed += 1
+                company = futures[future]
+                emit(3, f"Analyzed {company} ({completed}/{total_companies})", {
+                    "current_company": company,
+                    "progress": completed,
+                    "total": total_companies
+                })
+                result = future.result()
+                if result:
+                    results.append(result)
 
-            for email in unique:
-                date = parse_date(email.get("date", ""))
-                stages = detect_stages(email)
-                for stage in stages:
-                    if stage == "human_interview":
-                        if date and date not in pre_detected["human_interview_dates"]:
-                            pre_detected["human_interview_dates"].append(date)
-                    elif stage in pre_detected:
-                        if date and pre_detected[stage] is None:
-                            pre_detected[stage] = date
-
-            compact_text = format_compact(unique[:15])
-
-            pre_detected_hints = []
-            if pre_detected["rejection"]:
-                pre_detected_hints.append(f"REJECTION detected on {pre_detected['rejection']}")
-            if pre_detected["offer"]:
-                pre_detected_hints.append(f"OFFER detected on {pre_detected['offer']}")
-            pre_hint_str = "\n".join(pre_detected_hints) if pre_detected_hints else ""
-
-            analysis_prompt = f"""Analyze job application emails for "{company}".
-
-EMAILS (date | sender | subject [pre-detected stages]):
-{compact_text}
-
-{f"PRE-DETECTED STATUS: {pre_hint_str}" if pre_hint_str else ""}
-
-CRITICAL RULES:
-1. POSITION: Extract the actual JOB TITLE (e.g., "Graduate Software Engineer", "Analyst Program 2026", "Data Scientist").
-   - Look for patterns like "applying for [POSITION]", "application for [POSITION]", "Thank you for applying to [POSITION]"
-   - NEVER use generic phrases like "Thank you for your application", "We've received your application", "role at X"
-
-2. MULTIPLE POSITIONS: If the candidate applied to MULTIPLE different positions at this company, return ALL of them as separate entries in the "positions" array. Each position should have its own timeline and status.
-
-3. "video_interview" = ONE-WAY pre-recorded video (HireVue, Willo) only. Phone calls and live video calls are human_interviews.
-
-4. Count human interviews: same event on same day = 1, different days = multiple. "Super Day" = 1 event.
-
-5. "status": For EACH position separately - "rejected" if that specific position was rejected, "offer" if offered, "pending" otherwise.
-
-OUTPUT JSON only (array of positions):
-{{"positions":[{{"position":"Job Title","applied":"YYYY-MM-DD","aptitude_test":"YYYY-MM-DD or null","simulation_test":"YYYY-MM-DD or null","coding_test":"YYYY-MM-DD or null","video_interview":"YYYY-MM-DD or null","human_interviews":N,"status":"pending|rejected|offer"}}]}}"""
-
-            try:
-                analysis = client.chat.completions.create(
-                    model=MODEL,
-                    messages=[
-                        {"role": "system", "content": "You are a precise job application timeline extractor. Output valid JSON only."},
-                        {"role": "user", "content": analysis_prompt}
-                    ],
-                    temperature=0.1
-                )
-
-                result = extract_json(analysis.choices[0].message.content or "")
-                positions = result.get("positions", [])
-
-                if not positions and result.get("position"):
-                    positions = [result]
-
-                if not positions:
-                    continue
-
-                final_positions = []
-                for i, pos in enumerate(positions):
-                    position_name = pos.get("position", "")
-                    if any(bad in position_name.lower() for bad in BAD_POSITION_PATTERNS):
-                        position_name = ""
-
-                    use_predetected = (i == 0)
-
-                    final_pos = {
-                        "position": position_name,
-                        "application_submitted": pos.get("applied") or (pre_detected["application_submitted"] if use_predetected else None),
-                        "aptitude_test": pos.get("aptitude_test") if pos.get("aptitude_test") not in [None, "null", ""] else (pre_detected["aptitude_test"] if use_predetected else None),
-                        "simulation_test": pos.get("simulation_test") if pos.get("simulation_test") not in [None, "null", ""] else (pre_detected["simulation_test"] if use_predetected else None),
-                        "coding_test": pos.get("coding_test") if pos.get("coding_test") not in [None, "null", ""] else (pre_detected["coding_test"] if use_predetected else None),
-                        "video_interview": pos.get("video_interview") if pos.get("video_interview") not in [None, "null", ""] else (pre_detected["video_interview"] if use_predetected else None),
-                        "num_human_interview": str(pos.get("human_interviews", 0) or (len(pre_detected["human_interview_dates"]) if use_predetected else 0)),
-                        "app_accepted": (
-                            "y" if pos.get("status") == "offer" else
-                            ("n" if pos.get("status") == "rejected" else None)
-                        )
-                    }
-
-                    for key in final_pos:
-                        if final_pos[key] == "null":
-                            final_pos[key] = None
-
-                    final_positions.append(final_pos)
-
-                if final_positions:
-                    results.append({
-                        "name": company,
-                        "positions": final_positions,
-                        "email_count": len(company_emails)
-                    })
-
-            except Exception as e:
-                print(f"  ❌ Error analyzing {company}: {e}")
-                continue
+        company_order = {c: i for i, c in enumerate(companies)}
+        results.sort(key=lambda r: company_order.get(r["name"], 999))
 
         # =========================
         # STEP 5: CLASSIFYING
@@ -1643,6 +1665,748 @@ def build_application_context(applications):
     ])
 
     return "\n".join(lines)
+
+
+# =========================
+# JOB RECOMMENDATION ENDPOINTS
+# =========================
+
+# Job Search API Configuration
+# Using multiple free APIs for better coverage
+
+def search_jobs_remotive(keywords, category=None, limit=20):
+    """Search jobs using Remotive API (free, no auth required)."""
+    try:
+        url = "https://remotive.com/api/remote-jobs"
+        params = {
+            "search": keywords,
+            "limit": limit
+        }
+        if category:
+            params["category"] = category
+
+        response = requests.get(url, params=params, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            return {"results": data.get("jobs", []), "count": len(data.get("jobs", []))}
+        else:
+            print(f"Remotive API error: {response.status_code}")
+            return {"results": [], "count": 0}
+    except Exception as e:
+        print(f"Error searching Remotive: {e}")
+        return {"results": [], "count": 0}
+
+
+def search_jobs_arbeitnow(keywords, location=None, page=1):
+    """Search jobs using Arbeitnow API (free, no auth required)."""
+    try:
+        url = "https://www.arbeitnow.com/api/job-board-api"
+        params = {"page": page}
+
+        response = requests.get(url, params=params, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            jobs = data.get("data", [])
+
+            # Filter by keywords if provided
+            if keywords:
+                keyword_lower = keywords.lower()
+                filtered_jobs = [
+                    job for job in jobs
+                    if keyword_lower in job.get("title", "").lower()
+                    or keyword_lower in job.get("description", "").lower()
+                    or keyword_lower in job.get("company_name", "").lower()
+                ]
+                return {"results": filtered_jobs, "count": len(filtered_jobs)}
+
+            return {"results": jobs, "count": len(jobs)}
+        else:
+            print(f"Arbeitnow API error: {response.status_code}")
+            return {"results": [], "count": 0}
+    except Exception as e:
+        print(f"Error searching Arbeitnow: {e}")
+        return {"results": [], "count": 0}
+
+
+def search_jobs_combined(keywords, location="", country="", page=1, results_per_page=20):
+    """Search jobs using multiple free APIs and combine results."""
+    all_jobs = []
+
+    # Try Remotive API first (remote jobs)
+    remotive_results = search_jobs_remotive(keywords, limit=results_per_page)
+    for job in remotive_results.get("results", []):
+        all_jobs.append({
+            "id": job.get("id", ""),
+            "title": job.get("title", ""),
+            "company": job.get("company_name", ""),
+            "location": job.get("candidate_required_location", "Remote"),
+            "description": job.get("description", "")[:500] + "..." if len(job.get("description", "")) > 500 else job.get("description", ""),
+            "url": job.get("url", ""),
+            "salary": job.get("salary", ""),
+            "job_type": job.get("job_type", ""),
+            "posted_date": job.get("publication_date", ""),
+            "source": "Remotive",
+            "tags": job.get("tags", [])
+        })
+
+    # Try Arbeitnow API as fallback
+    if len(all_jobs) < results_per_page:
+        arbeitnow_results = search_jobs_arbeitnow(keywords, location, page)
+        for job in arbeitnow_results.get("results", [])[:results_per_page - len(all_jobs)]:
+            all_jobs.append({
+                "id": job.get("slug", ""),
+                "title": job.get("title", ""),
+                "company": job.get("company_name", ""),
+                "location": job.get("location", "Remote"),
+                "description": job.get("description", "")[:500] + "..." if len(job.get("description", "")) > 500 else job.get("description", ""),
+                "url": job.get("url", ""),
+                "salary": "",
+                "job_type": "Full-time" if job.get("remote", False) else "On-site",
+                "posted_date": job.get("created_at", ""),
+                "source": "Arbeitnow",
+                "tags": job.get("tags", [])
+            })
+
+    return {"results": all_jobs, "count": len(all_jobs)}
+
+
+def extract_keywords_from_cv(cv_sections):
+    """Extract relevant keywords from CV sections for job search."""
+    keywords = []
+
+    if cv_sections.get("skills"):
+        skills = cv_sections["skills"]
+        if skills.get("technical"):
+            keywords.extend(skills["technical"][:5])
+        if skills.get("tools"):
+            keywords.extend(skills["tools"][:3])
+
+    if cv_sections.get("experience"):
+        for exp in cv_sections["experience"][:2]:
+            if exp.get("title"):
+                keywords.append(exp["title"])
+
+    return keywords
+
+
+def extract_successful_patterns(applications):
+    """Extract patterns from successful applications (interviews/offers)."""
+    successful_roles = []
+    successful_companies = []
+
+    for app in applications:
+        # Consider successful if got interview or offer
+        if app.get("interviews", 0) > 0 or app.get("status") == "Offer":
+            if app.get("position"):
+                successful_roles.append(app["position"])
+            if app.get("company"):
+                successful_companies.append(app["company"])
+
+    return {
+        "roles": successful_roles,
+        "companies": successful_companies
+    }
+
+
+def calculate_job_match_score(job, cv_sections, applications, target_roles=None):
+    """Calculate match score between a job and user's profile."""
+    score = 50  # Base score
+    reasons = []
+
+    job_title = (job.get("title") or "").lower()
+    job_description = (job.get("description") or "").lower()
+    # Handle both old format (nested object) and new format (string)
+    company = job.get("company", "")
+    job_company = (company.get("display_name") if isinstance(company, dict) else company or "").lower()
+
+    # Check skill matches
+    if cv_sections.get("skills"):
+        skills = cv_sections["skills"]
+        all_skills = []
+        if skills.get("technical"):
+            all_skills.extend([s.lower() for s in skills["technical"]])
+        if skills.get("tools"):
+            all_skills.extend([s.lower() for s in skills["tools"]])
+
+        matched_skills = []
+        for skill in all_skills:
+            if skill in job_title or skill in job_description:
+                matched_skills.append(skill)
+                score += 5
+
+        if matched_skills:
+            reasons.append(f"Matches your skills: {', '.join(matched_skills[:3])}")
+
+    # Check experience alignment
+    if cv_sections.get("experience"):
+        for exp in cv_sections["experience"]:
+            exp_title = (exp.get("title") or "").lower()
+            if any(word in job_title for word in exp_title.split() if len(word) > 3):
+                score += 10
+                reasons.append(f"Similar to your role: {exp.get('title')}")
+                break
+
+    # Check successful application patterns
+    patterns = extract_successful_patterns(applications)
+    for role in patterns["roles"]:
+        if any(word.lower() in job_title for word in role.split() if len(word) > 3):
+            score += 15
+            reasons.append("Similar to roles where you've had success")
+            break
+
+    # Check target roles
+    if target_roles:
+        for target in target_roles:
+            if target.lower() in job_title:
+                score += 20
+                reasons.append(f"Matches your target role: {target}")
+                break
+
+    # Cap score at 100
+    score = min(score, 100)
+
+    return {
+        "score": score,
+        "reasons": reasons if reasons else ["General match based on your profile"]
+    }
+
+
+def generate_job_recommendations_ai(cv_sections, applications, jobs):
+    """Use AI to generate personalized job recommendations."""
+
+    # Build context
+    cv_summary = json.dumps(cv_sections, indent=2)[:3000] if cv_sections else "No CV data"
+    app_summary = build_application_context(applications)[:2000] if applications else "No application history"
+
+    jobs_text = ""
+    for i, job in enumerate(jobs[:10]):
+        jobs_text += f"\n{i+1}. {job.get('title')} at {job.get('company', {}).get('display_name', 'Unknown')}"
+        jobs_text += f"\n   Location: {job.get('location', {}).get('display_name', 'Unknown')}"
+        jobs_text += f"\n   Description: {(job.get('description') or '')[:200]}..."
+
+    prompt = f"""Based on this user's CV and application history, rank and explain job recommendations.
+
+CV SUMMARY:
+{cv_summary}
+
+APPLICATION HISTORY:
+{app_summary}
+
+AVAILABLE JOBS:
+{jobs_text}
+
+For each job, provide:
+1. A match score (0-100)
+2. 2-3 specific reasons why this job is a good/bad fit
+3. Any concerns or considerations
+
+Return JSON:
+{{
+    "recommendations": [
+        {{
+            "job_index": 1,
+            "score": 85,
+            "reasons": ["Strong Python skills match", "Similar to successful fintech applications"],
+            "concerns": ["May require more cloud experience"]
+        }}
+    ],
+    "overall_advice": "Brief advice about the job search direction"
+}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": "You are a career advisor helping match job seekers with opportunities based on their CV and application history."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3
+        )
+
+        result = extract_json(response.choices[0].message.content or "{}")
+        return result
+    except Exception as e:
+        print(f"Error generating AI recommendations: {e}")
+        return {"recommendations": [], "overall_advice": ""}
+
+
+@app.route('/jobs/search', methods=['GET'])
+def search_jobs():
+    """
+    Search for jobs using keywords and location.
+
+    Query params:
+    - keywords: Search terms (required)
+    - location: Location (default: hong kong)
+    - country: Country code (default: hk)
+    - page: Page number (default: 1)
+    """
+    keywords = request.args.get('keywords', '')
+    location = request.args.get('location', 'hong kong')
+    country = request.args.get('country', 'hk')
+    page = int(request.args.get('page', 1))
+
+    if not keywords:
+        return jsonify({"error": "Keywords required"}), 400
+
+    results = search_jobs_combined(keywords, location, country, page)
+
+    return jsonify({
+        "jobs": results.get("results", []),
+        "total": results.get("count", 0),
+        "page": page
+    })
+
+
+@app.route('/jobs/recommend', methods=['POST'])
+def recommend_jobs():
+    """
+    Get personalized job recommendations based on CV and application history.
+
+    Request body:
+    {
+        "cv_sections": { ... },
+        "applications": [ ... ],
+        "target_roles": ["Software Engineer", "Data Analyst"],
+        "location": "hong kong",
+        "country": "hk"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        cv_sections = data.get("cv_sections", {})
+        applications = data.get("applications", [])
+        target_roles = data.get("target_roles", [])
+        location = data.get("location", "hong kong")
+        country = data.get("country", "hk")
+
+        # Build search keywords from CV and successful patterns
+        keywords = []
+
+        # From CV skills
+        keywords.extend(extract_keywords_from_cv(cv_sections))
+
+        # From target roles
+        keywords.extend(target_roles)
+
+        # From successful applications
+        patterns = extract_successful_patterns(applications)
+        keywords.extend(patterns["roles"][:3])
+
+        # Deduplicate and limit
+        keywords = list(set(keywords))[:5]
+
+        if not keywords:
+            keywords = ["software engineer"]  # Default fallback
+
+        # Search for jobs using individual keywords (APIs don't handle multiple keywords well)
+        all_jobs = []
+        seen_ids = set()
+
+        for keyword in keywords[:3]:  # Search with top 3 keywords
+            print(f"Searching jobs with: {keyword}")
+            results = search_jobs_combined(keyword, location, country, page=1, results_per_page=10)
+            for job in results.get("results", []):
+                job_id = job.get("id") or job.get("title", "")
+                if job_id not in seen_ids:
+                    seen_ids.add(job_id)
+                    all_jobs.append(job)
+
+        raw_jobs = all_jobs[:20]  # Limit to 20 total
+
+        if not raw_jobs:
+            return jsonify({
+                "jobs": [],
+                "keywords_used": keywords,
+                "message": "No jobs found. Try different target roles or location."
+            })
+
+        # Calculate match scores for each job
+        scored_jobs = []
+        for job in raw_jobs:
+            match_info = calculate_job_match_score(job, cv_sections, applications, target_roles)
+            scored_jobs.append({
+                "id": job.get("id"),
+                "title": job.get("title"),
+                "company": job.get("company"),
+                "location": job.get("location"),
+                "description": job.get("description"),
+                "salary": job.get("salary"),
+                "url": job.get("url"),
+                "posted_date": job.get("posted_date"),
+                "source": job.get("source"),
+                "tags": job.get("tags", []),
+                "match_score": match_info["score"],
+                "match_reasons": match_info["reasons"]
+            })
+
+        # Sort by match score
+        scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
+
+        # Optionally use AI for deeper analysis (can be toggled)
+        use_ai_ranking = data.get("use_ai", False)
+        overall_advice = ""
+
+        if use_ai_ranking and scored_jobs:
+            ai_result = generate_job_recommendations_ai(cv_sections, applications, raw_jobs)
+            overall_advice = ai_result.get("overall_advice", "")
+
+            # Merge AI scores if available
+            ai_recs = {r["job_index"]: r for r in ai_result.get("recommendations", [])}
+            for i, job in enumerate(scored_jobs):
+                if i + 1 in ai_recs:
+                    ai_rec = ai_recs[i + 1]
+                    job["match_score"] = ai_rec.get("score", job["match_score"])
+                    job["match_reasons"] = ai_rec.get("reasons", job["match_reasons"])
+                    job["concerns"] = ai_rec.get("concerns", [])
+
+            # Re-sort after AI scoring
+            scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
+
+        return jsonify({
+            "jobs": scored_jobs[:15],
+            "total": len(scored_jobs),
+            "keywords_used": keywords,
+            "overall_advice": overall_advice,
+            "success": True
+        })
+
+    except Exception as e:
+        print(f"Job recommendation error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# CV ANALYSIS ENDPOINTS
+# =========================
+
+def extract_text_from_pdf(file_bytes):
+    """Extract text from PDF file bytes using PyPDF2."""
+    try:
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() or ""
+        return text.strip()
+    except Exception as e:
+        print(f"Error extracting PDF text: {e}")
+        return ""
+
+
+def extract_text_from_docx(file_bytes):
+    """Extract text from DOCX file bytes using python-docx."""
+    try:
+        doc = Document(io.BytesIO(file_bytes))
+        text = ""
+        for paragraph in doc.paragraphs:
+            text += paragraph.text + "\n"
+        # Also extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    text += cell.text + " "
+                text += "\n"
+        return text.strip()
+    except Exception as e:
+        print(f"Error extracting DOCX text: {e}")
+        return ""
+
+
+def parse_cv_sections(cv_text):
+    """Use GPT to parse CV text into structured sections."""
+    if not cv_text:
+        return {}
+
+    prompt = f"""Analyze this CV/Resume text and extract structured information.
+
+CV TEXT:
+{cv_text[:8000]}
+
+Return a JSON object with these sections (use empty arrays/strings if not found):
+{{
+    "personal_info": {{
+        "name": "Full Name",
+        "email": "email@example.com",
+        "phone": "phone number",
+        "location": "City, Country",
+        "linkedin": "LinkedIn URL if present",
+        "github": "GitHub URL if present"
+    }},
+    "summary": "Professional summary or objective statement",
+    "skills": {{
+        "technical": ["Python", "JavaScript", "etc"],
+        "soft": ["Leadership", "Communication", "etc"],
+        "languages": ["English", "Mandarin", "etc"],
+        "tools": ["Git", "Docker", "etc"]
+    }},
+    "experience": [
+        {{
+            "company": "Company Name",
+            "title": "Job Title",
+            "duration": "Jan 2023 - Present",
+            "location": "City, Country",
+            "highlights": ["Achievement 1", "Achievement 2"]
+        }}
+    ],
+    "education": [
+        {{
+            "institution": "University Name",
+            "degree": "Bachelor of Science in Computer Science",
+            "duration": "2019 - 2023",
+            "gpa": "3.8/4.0 if mentioned",
+            "highlights": ["Dean's List", "Relevant coursework"]
+        }}
+    ],
+    "projects": [
+        {{
+            "name": "Project Name",
+            "description": "Brief description",
+            "technologies": ["React", "Node.js"]
+        }}
+    ],
+    "certifications": ["AWS Certified", "Google Cloud Professional"],
+    "awards": ["Award 1", "Award 2"]
+}}
+
+Output valid JSON only."""
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": "You are a CV/Resume parser. Extract structured information from CV text and return valid JSON only."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1
+        )
+
+        result = extract_json(response.choices[0].message.content or "{}")
+        return result
+    except Exception as e:
+        print(f"Error parsing CV sections: {e}")
+        return {}
+
+
+def analyze_cv_with_applications(cv_sections, applications_context, target_roles=None, target_companies=None):
+    """Generate AI insights by analyzing CV against application history."""
+
+    target_info = ""
+    if target_roles:
+        target_info += f"\nTARGET ROLES: {', '.join(target_roles)}"
+    if target_companies:
+        target_info += f"\nTARGET COMPANIES: {', '.join(target_companies)}"
+
+    prompt = f"""Analyze this CV/Resume against the user's job application history and provide actionable insights.
+
+CV SECTIONS:
+{json.dumps(cv_sections, indent=2)[:6000]}
+
+APPLICATION HISTORY:
+{applications_context[:4000]}
+{target_info}
+
+Provide a comprehensive analysis in this JSON format:
+{{
+    "pattern_insights": {{
+        "skill_match_analysis": {{
+            "strong_matches": [
+                {{
+                    "skill": "Python",
+                    "matched_companies": ["Google", "Meta"],
+                    "success_rate": 75,
+                    "insight": "Your Python skills align well with companies that progressed to interviews"
+                }}
+            ],
+            "missing_skills": [
+                {{
+                    "skill": "Kubernetes",
+                    "companies_requiring": ["Amazon", "Microsoft"],
+                    "priority": "high",
+                    "suggestion": "Consider adding container orchestration experience"
+                }}
+            ],
+            "underutilized_skills": [
+                {{
+                    "skill": "Machine Learning",
+                    "suggestion": "This skill is on your CV but not highlighted in applications to ML-focused roles"
+                }}
+            ]
+        }},
+        "role_alignment": {{
+            "best_fit_roles": ["Backend Engineer", "Full Stack Developer"],
+            "alignment_score": 82,
+            "explanation": "Your experience strongly matches backend development roles based on your skills and past application success"
+        }},
+        "application_patterns": {{
+            "success_factors": ["Strong technical skills led to 60% interview rate for engineering roles"],
+            "failure_patterns": ["Applications to senior roles without matching experience had lower success"],
+            "timing_insights": ["Applications submitted early in hiring cycles had better response rates"]
+        }}
+    }},
+    "improvement_suggestions": [
+        {{
+            "category": "Skills",
+            "priority": "high",
+            "title": "Add Cloud Technologies",
+            "description": "60% of companies you applied to mention AWS/GCP requirements. Adding cloud certifications would strengthen your profile.",
+            "action_items": ["Get AWS Solutions Architect certification", "Add cloud projects to portfolio", "Update CV with any cloud experience"]
+        }},
+        {{
+            "category": "Experience",
+            "priority": "medium",
+            "title": "Quantify Achievements",
+            "description": "Your experience section could benefit from more metrics and quantifiable results.",
+            "action_items": ["Add performance metrics to each role", "Include project impact numbers", "Highlight team sizes managed"]
+        }},
+        {{
+            "category": "Format",
+            "priority": "low",
+            "title": "Optimize CV Structure",
+            "description": "Consider restructuring to highlight most relevant experience first.",
+            "action_items": ["Move relevant projects to the top", "Add a technical skills summary section"]
+        }}
+    ],
+    "summary": {{
+        "overall_assessment": "Your CV shows strong technical foundation with room for improvement in cloud technologies and experience quantification.",
+        "strengths": ["Strong programming skills", "Relevant education", "Project experience"],
+        "areas_for_improvement": ["Cloud technologies", "Leadership experience", "Industry certifications"],
+        "recommended_next_steps": ["Focus on AWS certification", "Add metrics to experience descriptions", "Target mid-level engineering roles"]
+    }}
+}}
+
+Provide specific, actionable advice based on the actual CV content and application history. Reference specific companies and roles from the application history when relevant."""
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": "You are a career coach and CV expert. Analyze CVs against job application history to provide personalized, actionable insights."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+
+        result = extract_json(response.choices[0].message.content or "{}")
+        return result
+    except Exception as e:
+        print(f"Error analyzing CV: {e}")
+        return {"error": str(e)}
+
+
+@app.route('/cv/upload', methods=['POST'])
+def upload_cv():
+    """
+    Upload and parse CV file (PDF or DOCX).
+
+    Request: multipart/form-data with 'file' field
+    Response: { success, cv_text, sections, word_count }
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+
+        # Check file extension
+        filename = file.filename.lower()
+        if not (filename.endswith('.pdf') or filename.endswith('.docx')):
+            return jsonify({"error": "Only PDF and DOCX files are supported"}), 400
+
+        # Read file bytes
+        file_bytes = file.read()
+
+        # Extract text based on file type
+        if filename.endswith('.pdf'):
+            cv_text = extract_text_from_pdf(file_bytes)
+        else:
+            cv_text = extract_text_from_docx(file_bytes)
+
+        if not cv_text:
+            return jsonify({"error": "Could not extract text from file. Please ensure the file contains readable text."}), 400
+
+        # Parse CV sections using GPT
+        sections = parse_cv_sections(cv_text)
+
+        # Calculate word count
+        word_count = len(cv_text.split())
+
+        return jsonify({
+            "success": True,
+            "cv_text": cv_text,
+            "sections": sections,
+            "word_count": word_count,
+            "filename": file.filename
+        })
+
+    except Exception as e:
+        print(f"CV upload error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/cv/analyze', methods=['POST'])
+def analyze_cv():
+    """
+    Analyze CV against user's application history.
+
+    Request body:
+    {
+        "cv_text": "Full CV text",
+        "sections": { parsed sections from upload },
+        "applications": [ application objects ],
+        "target_roles": ["Role1", "Role2"],  // optional
+        "target_companies": ["Company1"]     // optional
+    }
+
+    Response: { pattern_insights, improvement_suggestions, summary }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        cv_text = data.get("cv_text", "")
+        sections = data.get("sections", {})
+        applications = data.get("applications", [])
+        target_roles = data.get("target_roles", [])
+        target_companies = data.get("target_companies", [])
+
+        if not cv_text and not sections:
+            return jsonify({"error": "CV text or sections required"}), 400
+
+        # Build application context
+        applications_context = build_application_context(applications)
+
+        # Analyze CV against applications
+        analysis = analyze_cv_with_applications(
+            sections or {"raw_text": cv_text[:5000]},
+            applications_context,
+            target_roles,
+            target_companies
+        )
+
+        if "error" in analysis:
+            return jsonify({"error": analysis["error"]}), 500
+
+        return jsonify({
+            "success": True,
+            **analysis
+        })
+
+    except Exception as e:
+        print(f"CV analyze error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':

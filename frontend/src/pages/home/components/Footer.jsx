@@ -4,12 +4,15 @@ export default function Footer() {
     <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
       <div className="col-span-2">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-            <i className="ri-briefcase-line text-white text-xl"></i>
+          <div className="relative w-10 h-10 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <i className="ri-briefcase-4-fill text-white text-xl"></i>
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center shadow-sm">
+              <i className="ri-sparkling-fill text-[9px] text-yellow-800"></i>
+            </div>
           </div>
           <div className="flex flex-col">
-            <h3 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-700 bg-clip-text text-transparent">JobTracker</h3>
-            <span className="text-xs font-medium text-blue-500 -mt-1">AI Powered</span>
+            <h3 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">JobTracker</h3>
+            <span className="text-xs font-medium text-indigo-500 -mt-1">AI Powered</span>
           </div>
         </div>
         <p className="text-gray-600">AI-powered job application tracking.</p>

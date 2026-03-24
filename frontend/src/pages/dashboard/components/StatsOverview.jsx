@@ -47,7 +47,7 @@ export default function StatsOverview({ applications }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <>
       {stats.map((stat, index) => (
         <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
@@ -64,6 +64,6 @@ export default function StatsOverview({ applications }) {
           </div>
         </div>
       ))}
-    </div>
+    </>
   );
 }

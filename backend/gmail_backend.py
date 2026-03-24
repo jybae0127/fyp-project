@@ -311,9 +311,7 @@ def fetch_all_emails(service, query, max_results=200):
 # =========================
 @app.route('/')
 def index():
-    if os.path.exists(TOKEN_FILE):
-        return '<p>Already authenticated! Use /query?q=... or /process</p>'
-
+    # Always start OAuth flow - let users re-authenticate or switch accounts
     flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri=REDIRECT_URI)
     auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
     return redirect(auth_url)

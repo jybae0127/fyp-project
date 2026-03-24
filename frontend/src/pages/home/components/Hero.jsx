@@ -58,26 +58,26 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/50"></div>
 
       <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
-        <h1 className="text-6xl font-bold mb-6">
+        <h1 className="text-6xl font-bold mb-6 animate-fade-in-up" style={{ animationDelay: "0s" }}>
           <span className="bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 bg-clip-text text-transparent bg-[length:200%_200%] bg-[position:0%_50%] hover:bg-[position:100%_50%] transition-all duration-700 cursor-default">Automated Job Application</span>{" "}
           <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 bg-clip-text text-transparent animate-gradient">Tracker</span>
         </h1>
 
-        <p className="text-xl text-gray-600 mb-4 max-w-2xl mx-auto">
+        <p className="text-xl font-bold text-indigo-400 mb-4 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
           Connect your Gmail once — we handle the rest automatically.
         </p>
-        <p className="text-lg text-gray-500 mb-6 max-w-2xl mx-auto">
+        <p className="text-lg text-gray-500 mb-6 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "1.2s" }}>
           AI scans your inbox, detects job-related emails, classifies them by stage, and visualizes your entire application pipeline.
         </p>
 
         {/* One-click badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full mb-6 border border-blue-200">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full mb-6 border border-blue-200 animate-fade-in-up" style={{ animationDelay: "1.8s" }}>
           <i className="ri-google-fill text-red-500"></i>
           <span className="text-sm font-semibold text-gray-700">One-Click Gmail Integration</span>
           <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">FREE</span>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-3">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 animate-fade-in-up" style={{ animationDelay: "2.4s" }}>
           <button
             onClick={handleClick}
             className="btn-shine px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-xl shadow-lg transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:scale-105 hover:-translate-y-1"
@@ -102,14 +102,14 @@ export default function Hero() {
         </div>
 
         {/* Trust indicators */}
-        <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-500">
+        <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-500 animate-fade-in-up" style={{ animationDelay: "3.0s" }}>
           <span className="flex items-center gap-1"><i className="ri-shield-check-line text-green-500"></i> Secure OAuth 2.0</span>
           <span className="flex items-center gap-1"><i className="ri-lock-line text-green-500"></i> No passwords stored</span>
           <span className="flex items-center gap-1"><i className="ri-mail-forbid-line text-green-500"></i> No raw emails stored</span>
           <span className="flex items-center gap-1"><i className="ri-time-line text-green-500"></i> Setup in 30 seconds</span>
         </div>
 
-        <div className="mt-12 relative h-[600px] overflow-hidden rounded-2xl shadow-2xl border bg-gray-100">
+        <div className="mt-12 relative h-[600px] overflow-hidden rounded-2xl shadow-2xl border bg-gray-100 animate-fade-in-up" style={{ animationDelay: "3.6s" }}>
           {images.map((src, index) => (
             <img
               key={src}

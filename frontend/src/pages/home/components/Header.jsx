@@ -71,9 +71,7 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center space-x-3 group cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
-              <i className="ri-briefcase-line text-white text-xl"></i>
-            </div>
+            <img src="/logo.png" alt="JobTracker logo" className="w-10 h-10 object-contain rounded-2xl border border-gray-200 shadow-md group-hover:scale-105 transition-all duration-300" />
             <div className="flex flex-col">
               <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-700 bg-clip-text text-transparent">JobTracker</h1>
               <span className="text-xs font-medium text-blue-500 -mt-1">AI Powered</span>

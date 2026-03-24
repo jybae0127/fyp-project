@@ -8,6 +8,8 @@ import PerformanceAnalytics from './components/PerformanceAnalytics';
 import ChatbotWidget from './components/ChatbotWidget';
 import EditApplicationModal from './components/EditApplicationModal';
 import AddApplicationModal from './components/AddApplicationModal';
+import CVAnalysisCard from './components/CVAnalysisCard';
+import JobRecommendationsCard from './components/JobRecommendationsCard';
 import useGmailPopup from '../hooks/useGmailPopup';
 import {
   checkAuthStatus,
@@ -23,6 +25,7 @@ export default function Dashboard() {
     () => localStorage.getItem('gmail_connected') === 'true'
   );
   const [loading, setLoading] = useState(false);
+  const [loadingCache, setLoadingCache] = useState(true); // Start true to prevent flash
   const [processing, setProcessing] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
@@ -33,6 +36,7 @@ export default function Dashboard() {
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState(null);
 
   // Date range state
@@ -46,6 +50,12 @@ export default function Dashboard() {
     // Default to today
     return new Date().toISOString().split('T')[0];
   });
+
+  // Track if this is initial load (to show date range only once)
+  // Persist in localStorage so it survives navigation between pages
+  const [initialLoadDone, setInitialLoadDone] = useState(
+    () => localStorage.getItem('dashboard_initialized') === 'true'
+  );
 
   const openGmailPopup = useGmailPopup();
 
@@ -67,25 +77,37 @@ export default function Dashboard() {
   }, [processing]);
 
   useEffect(() => {
-    // Verify Gmail connection with backend
-    const checkConnection = async () => {
-      const localConnected = localStorage.getItem('gmail_connected') === 'true';
-      if (localConnected) {
-        // Verify with backend
-        const backendConnected = await checkAuthStatus();
-        setIsGmailConnected(backendConnected);
-        if (!backendConnected) {
-          // Session expired - clear state and notify user
-          localStorage.removeItem('gmail_connected');
-          setApplications([]);
-          setSessionExpired(true);
-          // Auto-hide notification after 5 seconds
-          setTimeout(() => setSessionExpired(false), 5000);
+    // Verify Gmail connection with backend and load cached data
+    const initializeDashboard = async () => {
+      try {
+        const localConnected = localStorage.getItem('gmail_connected') === 'true';
+        if (localConnected) {
+          // Verify with backend
+          const backendConnected = await checkAuthStatus();
+          setIsGmailConnected(backendConnected);
+          if (!backendConnected) {
+            // Session expired - clear state and notify user
+            localStorage.removeItem('gmail_connected');
+            setApplications([]);
+            setSessionExpired(true);
+            setTimeout(() => setSessionExpired(false), 5000);
+          } else {
+            // Try to load cached applications immediately
+            const cachedData = await getApplications();
+            if (!cachedData.error && cachedData.companies && cachedData.companies.length > 0) {
+              const transformedApps = transformToApplications(cachedData);
+              setApplications(transformedApps);
+              setInitialLoadDone(true);
+              localStorage.setItem('dashboard_initialized', 'true');
+            }
+          }
         }
+      } finally {
+        setLoadingCache(false);
       }
     };
 
-    checkConnection();
+    initializeDashboard();
 
     // Listen for auth success event (e.g., when user logs in from this page)
     const handler = () => {
@@ -150,6 +172,9 @@ export default function Dashboard() {
       }
       const transformedApps = transformToApplications(data);
       setApplications(transformedApps);
+      // Mark as initialized so date selection won't show again
+      setInitialLoadDone(true);
+      localStorage.setItem('dashboard_initialized', 'true');
     } catch (err) {
       console.error('Failed to fetch applications:', err);
       setError('Failed to process emails. Please try again.');
@@ -167,8 +192,11 @@ export default function Dashboard() {
     // Clear all application state
     setApplications([]);
     setIsGmailConnected(false);
+    setInitialLoadDone(false);
     setError(null);
     setCacheNotice({ show: false, fromCache: false, incremental: false });
+    // Clear localStorage flags so date selection shows on next login
+    localStorage.removeItem('dashboard_initialized');
   };
 
   // Modal handlers
@@ -197,6 +225,7 @@ export default function Dashboard() {
         onGmailConnect={handleGmailConnect}
         onRefresh={handleRefresh}
         onSignOut={handleSignOut}
+        onDateRangeClick={() => setIsDateRangeModalOpen(true)}
         loading={loading}
         processing={processing}
       />
@@ -253,7 +282,15 @@ export default function Dashboard() {
           </div>
         )}
 
-        {!isGmailConnected ? (
+        {loadingCache && initialLoadDone ? (
+          // Brief loading state while fetching cached data
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto mb-6">
+              <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-500">Loading your dashboard...</p>
+          </div>
+        ) : !isGmailConnected ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 mx-auto mb-8 bg-blue-100 rounded-2xl flex items-center justify-center">
               <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,7 +325,7 @@ export default function Dashboard() {
               )}
             </button>
           </div>
-        ) : applications.length === 0 && !processing ? (
+        ) : applications.length === 0 && !processing && !initialLoadDone ? (
           <div className="text-center py-16">
             <div className="max-w-md mx-auto bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
               <div className="w-16 h-16 mx-auto mb-6 bg-blue-100 rounded-2xl flex items-center justify-center">
@@ -388,7 +425,11 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            <StatsOverview applications={applications} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+              <StatsOverview applications={applications} />
+              <CVAnalysisCard />
+              <JobRecommendationsCard />
+            </div>
 
             <SankeyDiagram applications={applications} />
 
@@ -429,6 +470,68 @@ export default function Dashboard() {
           }}
           onSave={handleModalSave}
         />
+      )}
+
+      {/* Date Range Modal */}
+      {isDateRangeModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl animate-fade-in">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Select Date Range</h2>
+              <button
+                onClick={() => setIsDateRangeModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <i className="ri-close-line text-2xl"></i>
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              Choose the date range for emails to analyze
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setIsDateRangeModalOpen(false)}
+                className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setIsDateRangeModalOpen(false);
+                  fetchApplications(true);
+                }}
+                disabled={processing}
+                className="flex-1 px-4 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <i className="ri-search-line mr-2"></i>
+                Analyze Emails
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

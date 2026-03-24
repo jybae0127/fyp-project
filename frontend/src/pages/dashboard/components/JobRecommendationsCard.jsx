@@ -1,0 +1,38 @@
+import { useNavigate } from 'react-router-dom';
+
+export default function JobRecommendationsCard() {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      onClick={() => navigate('/job-recommendations')}
+      className="card-shine relative bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl p-6 cursor-pointer transition-all duration-300 group"
+    >
+      {/* Animated glow effect */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-400 opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-300 -z-10"></div>
+
+      {/* NEW Badge with glow */}
+      <div className="absolute top-2 right-2">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-400 text-yellow-900 animate-pulse shadow-lg shadow-yellow-400/50">
+          NEW
+        </span>
+      </div>
+
+      {/* Content - matching stat card layout */}
+      <div className="flex items-center justify-between relative z-10">
+        <div>
+          <p className="text-sm font-medium text-white/80 mb-1">Job Search</p>
+          <p className="text-2xl font-bold text-white drop-shadow-lg">Find Jobs</p>
+        </div>
+        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300">
+          <i className="ri-briefcase-line text-xl text-white"></i>
+        </div>
+      </div>
+      <div className="mt-4 relative z-10">
+        <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+          <div className="h-full w-1/2 bg-white/60 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}

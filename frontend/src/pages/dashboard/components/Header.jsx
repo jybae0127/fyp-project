@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserInfo, logout } from '../../../services/api';
 
-export default function Header({ isGmailConnected, onGmailConnect, onRefresh, onSignOut, loading, processing }) {
+export default function Header({ isGmailConnected, onGmailConnect, onRefresh, onSignOut, onDateRangeClick, loading, processing }) {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
@@ -42,20 +42,26 @@ export default function Header({ isGmailConnected, onGmailConnect, onRefresh, on
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center space-x-3 cursor-pointer"
+              className="flex items-center space-x-3 cursor-pointer group"
             >
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <i className="ri-briefcase-line text-white text-lg"></i>
-              </div>
-              <h1 className="text-xl font-semibold text-gray-900">JobTracker AI</h1>
+              <img src="/logo.png" alt="JobTracker logo" className="w-10 h-10 object-contain rounded-2xl border border-gray-200 shadow-md group-hover:scale-105 transition-all duration-300" />
+              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">JobTracker</h1>
             </button>
 
             {isGmailConnected && (
-              <div className="flex items-center space-x-4 ml-8">
+              <div className="flex items-center space-x-3 ml-8">
                 <div className="flex items-center space-x-2 px-3 py-1 bg-green-50 rounded-full">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm text-green-700 font-medium">Gmail Connected</span>
                 </div>
+                <button
+                  onClick={onDateRangeClick}
+                  disabled={processing}
+                  className="inline-flex items-center px-3 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 disabled:opacity-50 cursor-pointer"
+                >
+                  <i className="ri-calendar-line mr-1.5"></i>
+                  Date Range
+                </button>
                 <button
                   onClick={onRefresh}
                   disabled={processing}

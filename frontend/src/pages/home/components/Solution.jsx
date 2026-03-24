@@ -3,17 +3,20 @@ export default function Solution() {
     {
       icon: "ri-mail-check-line",
       title: "Smart Email Detection",
-      description: "Automatically identifies job application emails from companies, recruiters, and ATS platforms like Workday, Lever, and Greenhouse."
+      description: "Automatically identifies job application emails from companies, recruiters, and ATS platforms like Workday, Lever, and Greenhouse.",
+      image: "/solution/1.png"
     },
     {
       icon: "ri-pie-chart-line",
       title: "Stage Classification",
-      description: "AI categorizes each email into stages: Application Submitted, Assessment, Interview, Offer, or Rejection."
+      description: "AI categorizes each email into stages: Application Submitted, Assessment, Interview, Offer, or Rejection.",
+      image: "/solution/2.png"
     },
     {
       icon: "ri-line-chart-line",
       title: "Visual Analytics",
-      description: "Interactive dashboards with Sankey diagrams, funnel charts, and timeline views to track your progress."
+      description: "Interactive dashboards with Sankey diagrams, funnel charts, and timeline views to track your progress.",
+      image: "/solution/3.png"
     }
   ];
 
@@ -29,12 +32,19 @@ export default function Solution() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {solutions.map((item, i) => (
-            <div key={i} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:bg-white/20 hover:-translate-y-1 transition-all duration-300">
-              <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <i className={`${item.icon} text-white text-2xl`}></i>
+            <div key={i} className="bg-white/25 backdrop-blur-sm rounded-2xl border border-white/30 hover:bg-white/35 hover:scale-105 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-default relative z-10">
+              {/* Image */}
+              <div className="w-full h-48 bg-white/10 flex items-center justify-center p-4">
+                <img src={item.image} alt={item.title} className="max-h-full max-w-full object-contain rounded-lg drop-shadow-md" />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-4">{item.title}</h3>
-              <p className="text-blue-100 leading-relaxed">{item.description}</p>
+
+              <div className="p-8">
+                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mb-6">
+                  <i className={`${item.icon} text-white text-2xl`}></i>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-4">{item.title}</h3>
+                <p className="text-blue-100 leading-relaxed">{item.description}</p>
+              </div>
             </div>
           ))}
         </div>

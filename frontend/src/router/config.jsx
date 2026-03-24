@@ -2,6 +2,8 @@
 import NotFound from "../pages/NotFound";
 import Home from "../pages/home/home";
 import Dashboard from "../pages/dashboard/page";
+import CVAnalysis from "../pages/cv-analysis/page";
+import JobRecommendations from "../pages/job-recommendations/page";
 
 const routes = [
   {
@@ -11,6 +13,14 @@ const routes = [
   {
     path: "/dashboard",
     element: <Dashboard />,
+  },
+  {
+    path: "/cv-analysis",
+    element: <CVAnalysis />,
+  },
+  {
+    path: "/job-recommendations",
+    element: <JobRecommendations />,
   },
   {
     path: "*",

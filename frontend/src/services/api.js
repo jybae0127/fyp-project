@@ -369,3 +369,133 @@ export async function sendChatMessage(
     return { error: error instanceof Error ? error.message : "Failed to connect to assistant" };
   }
 }
+
+/**
+ * Upload and parse a CV file (PDF or DOCX)
+ * @param file - File object to upload
+ * @returns { success, cv_text, sections, word_count, filename }
+ */
+export async function uploadCV(file) {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${LOCAL_URL}/cv/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to upload CV");
+    }
+    return data;
+  } catch (error) {
+    console.error("Error uploading CV:", error);
+    return { error: error instanceof Error ? error.message : "Failed to upload CV" };
+  }
+}
+
+/**
+ * Analyze CV against application history
+ * @param cvText - Full CV text
+ * @param sections - Parsed CV sections
+ * @param applications - Application history for context
+ * @param targetRoles - Optional target roles to focus analysis
+ * @param targetCompanies - Optional target companies to focus analysis
+ * @returns { pattern_insights, improvement_suggestions, summary }
+ */
+export async function analyzeCV(cvText, sections, applications, targetRoles = [], targetCompanies = []) {
+  try {
+    const response = await fetch(`${LOCAL_URL}/cv/analyze`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        cv_text: cvText,
+        sections,
+        applications,
+        target_roles: targetRoles,
+        target_companies: targetCompanies,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to analyze CV");
+    }
+    return data;
+  } catch (error) {
+    console.error("Error analyzing CV:", error);
+    return { error: error instanceof Error ? error.message : "Failed to analyze CV" };
+  }
+}
+
+/**
+ * Search for jobs using keywords
+ * @param keywords - Search terms
+ * @param location - Location (default: hong kong)
+ * @param country - Country code (default: hk)
+ * @param page - Page number
+ * @returns { jobs, total, page }
+ */
+export async function searchJobs(keywords, location = "hong kong", country = "hk", page = 1) {
+  try {
+    const params = new URLSearchParams({
+      keywords,
+      location,
+      country,
+      page: page.toString()
+    });
+
+    const response = await fetch(`${LOCAL_URL}/jobs/search?${params}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to search jobs");
+    }
+    return data;
+  } catch (error) {
+    console.error("Error searching jobs:", error);
+    return { error: error instanceof Error ? error.message : "Failed to search jobs", jobs: [] };
+  }
+}
+
+/**
+ * Get personalized job recommendations based on CV and application history
+ * @param cvSections - Parsed CV sections
+ * @param applications - Application history
+ * @param targetRoles - Target roles to focus on
+ * @param location - Job location
+ * @param country - Country code
+ * @param useAI - Whether to use AI for deeper analysis
+ * @returns { jobs, keywords_used, overall_advice }
+ */
+export async function getJobRecommendations(cvSections, applications, targetRoles = [], location = "hong kong", country = "hk", useAI = false) {
+  try {
+    const response = await fetch(`${LOCAL_URL}/jobs/recommend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        cv_sections: cvSections,
+        applications,
+        target_roles: targetRoles,
+        location,
+        country,
+        use_ai: useAI
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to get job recommendations");
+    }
+    return data;
+  } catch (error) {
+    console.error("Error getting job recommendations:", error);
+    return { error: error instanceof Error ? error.message : "Failed to get recommendations", jobs: [] };
+  }
+}

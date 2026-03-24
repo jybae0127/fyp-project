@@ -3,17 +3,17 @@ export default function About() {
     {
       icon: "ri-mail-unread-line",
       title: "Emails Get Buried",
-      description: "Application confirmations, interview invites, and rejection notices get lost in your inbox among hundreds of other emails."
+      description: "Application emails get lost among hundreds of others."
     },
     {
       icon: "ri-file-list-3-line",
       title: "No Central Tracking",
-      description: "Spreadsheets get outdated. You forget which companies you applied to, what stage you're at, or when you last heard back."
+      description: "Spreadsheets get outdated and hard to maintain."
     },
     {
       icon: "ri-question-line",
       title: "Lack of Visibility",
-      description: "Without a clear overview, you can't identify patterns in your job search or understand your application success rate."
+      description: "No clear picture of your application success rate."
     }
   ];
 
@@ -78,10 +78,7 @@ export default function About() {
     <section id="about" className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-6">The Problem We Solve</h2>
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-            The average job seeker applies to 100+ positions. Keeping track of them all is overwhelming.
-          </p>
+          <h2 className="text-4xl font-bold mb-4">The Problem We Solve</h2>
         </div>
 
         {/* Process Diagram */}
@@ -96,19 +93,14 @@ export default function About() {
             {stages.map((stage, i) => (
               <div key={i} className="flex items-center">
                 {/* Stage Card */}
-                <div className={`${stage.bgColor} ${stage.borderColor} border rounded-xl p-3 hover:shadow-md transition-all duration-300 w-32 h-52 flex flex-col`}>
-                  {/* Stage Number & Icon */}
+                <div className={`${stage.bgColor} ${stage.borderColor} border rounded-xl p-3 transition-all duration-300 w-32 h-52 flex flex-col hover:shadow-xl hover:scale-110 hover:-translate-y-2 hover:z-10 relative cursor-default`}>
                   <div className={`w-10 h-10 bg-gradient-to-br ${stage.color} rounded-lg flex items-center justify-center mb-3 mx-auto shadow-sm`}>
                     <i className={`${stage.icon} text-white text-lg`}></i>
                   </div>
-
-                  {/* Stage Title */}
                   <div className="text-center mb-2">
                     <span className="text-xs font-medium text-gray-400">Stage {stage.num}</span>
                     <h4 className="font-semibold text-gray-800 text-sm">{stage.title}</h4>
                   </div>
-
-                  {/* Stage Items */}
                   <div className="space-y-1 flex-1">
                     {stage.items.map((item, j) => (
                       <div key={j} className="text-xs text-gray-600 bg-white/60 rounded px-1.5 py-0.5 text-center truncate">
@@ -119,7 +111,7 @@ export default function About() {
                   </div>
                 </div>
 
-                {/* Connector Arrow (between cards, not inside) */}
+                {/* Connector Arrow */}
                 {i < stages.length - 1 && (
                   <div className="hidden lg:flex items-center justify-center px-1">
                     <i className="ri-arrow-right-line text-gray-400 text-3xl"></i>
@@ -128,20 +120,19 @@ export default function About() {
               </div>
             ))}
           </div>
-
         </div>
 
         <div className="text-center mb-12 mt-8">
-          <p className="text-xl text-gray-700 font-medium">
-            <i className="ri-arrow-down-circle-line text-orange-500 mr-2"></i>
-            This complex process leads to common problems for job seekers
+          <p className="text-2xl text-gray-600 font-semibold">
+            <i className="ri-arrow-down-line text-orange-500 mr-2"></i>
+            Leading to common problems
           </p>
         </div>
 
         {/* Pain Points */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {painPoints.map((point, i) => (
-            <div key={i} className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div key={i} className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-xl hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-default relative z-10">
               <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-6">
                 <i className={`${point.icon} text-red-600 text-xl`}></i>
               </div>
