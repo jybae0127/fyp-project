@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { logout } from "../services/api";
 
-const LOCAL_SERVER = "https://ermined-zayden-bromic.ngrok-free.dev";
+const LOCAL_SERVER = "https://jobtracker-api.ddns.net";
 
 export default function SettingsModal({ onClose, onSignOut }) {
   const [clearingCache, setClearingCache] = useState(false);

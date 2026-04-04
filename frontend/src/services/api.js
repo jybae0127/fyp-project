@@ -1,7 +1,6 @@
-// Render for OAuth, EC2 (via ngrok) for heavy processing
-const RENDER_URL = "https://gmail-login-backend.onrender.com";
-const LOCAL_URL = "https://ermined-zayden-bromic.ngrok-free.dev";
-const NGROK_HEADERS = { "ngrok-skip-browser-warning": "true" };
+// EC2 (nginx) for OAuth, EC2 (nginx) for heavy processing
+const RENDER_URL = "https://jobtracker-auth.ddns.net";
+const LOCAL_URL = "https://jobtracker-api.ddns.net";
 
 /**
  * Check if the backend is authenticated with Gmail
@@ -72,7 +71,7 @@ export async function processApplicationsWithProgress(
   if (refresh) params.append("refresh", "true");
   if (params.toString()) url += `?${params.toString()}`;
 
-  const response = await fetch(url, { headers: NGROK_HEADERS });
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error("Connection to server lost");
@@ -126,7 +125,7 @@ export async function processApplications(startDate, endDate, refresh) {
     if (refresh) params.append("refresh", "true");
     if (params.toString()) url += `?${params.toString()}`;
 
-    const response = await fetch(url, { headers: NGROK_HEADERS });
+    const response = await fetch(url);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -243,7 +242,7 @@ export async function addApplication(
   try {
     const response = await fetch(`${LOCAL_URL}/applications/add`, {
       method: "POST",
-      headers: { ...NGROK_HEADERS, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ company, position }),
     });
 
@@ -279,7 +278,7 @@ export async function updateApplication(
 
     const response = await fetch(`${LOCAL_URL}/applications/update`, {
       method: "PUT",
-      headers: { ...NGROK_HEADERS, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
@@ -309,7 +308,7 @@ export async function deleteApplication(
 
     const response = await fetch(`${LOCAL_URL}/applications/delete`, {
       method: "DELETE",
-      headers: { ...NGROK_HEADERS, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
@@ -329,7 +328,7 @@ export async function deleteApplication(
  */
 export async function getApplications() {
   try {
-    const response = await fetch(`${LOCAL_URL}/applications`, { headers: NGROK_HEADERS });
+    const response = await fetch(`${LOCAL_URL}/applications`);
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Failed to get applications");
@@ -354,7 +353,6 @@ export async function sendChatMessage(
     const response = await fetch(`${LOCAL_URL}/chat`, {
       method: "POST",
       headers: {
-        ...NGROK_HEADERS,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -387,7 +385,6 @@ export async function uploadCV(file) {
 
     const response = await fetch(`${LOCAL_URL}/cv/upload`, {
       method: "POST",
-      headers: NGROK_HEADERS,
       body: formData,
     });
 
@@ -416,7 +413,6 @@ export async function analyzeCV(cvText, sections, applications, targetRoles = []
     const response = await fetch(`${LOCAL_URL}/cv/analyze`, {
       method: "POST",
       headers: {
-        ...NGROK_HEADERS,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -456,7 +452,7 @@ export async function searchJobs(keywords, location = "hong kong", country = "hk
       page: page.toString()
     });
 
-    const response = await fetch(`${LOCAL_URL}/jobs/search?${params}`, { headers: NGROK_HEADERS });
+    const response = await fetch(`${LOCAL_URL}/jobs/search?${params}`);
     const data = await response.json();
 
     if (!response.ok) {
@@ -484,7 +480,6 @@ export async function getJobRecommendations(cvSections, applications, targetRole
     const response = await fetch(`${LOCAL_URL}/jobs/recommend`, {
       method: "POST",
       headers: {
-        ...NGROK_HEADERS,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
