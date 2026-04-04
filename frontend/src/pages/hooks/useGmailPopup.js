@@ -1,8 +1,8 @@
 export default function useGmailPopup() {
   return () => {
     return new Promise((resolve) => {
-      // Use Render for OAuth
-      const url = "https://gmail-login-backend.onrender.com/";
+      // Use EC2 (nginx) for OAuth
+      const url = "https://jobtracker-auth.ddns.net/";
       const w = 500;
       const h = 650;
 
