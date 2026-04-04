@@ -18,7 +18,7 @@ from flask_cors import CORS
 import queue
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from openai import OpenAI
+from openai import AzureOpenAI
 import PyPDF2
 from docx import Document
 
@@ -223,9 +223,11 @@ def check_cache_coverage(user_email, requested_start, requested_end):
     print(f"   ⚠️ Complex cache gap - fetching full range")
     return None, None
 
-# OpenAI Configuration
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
+# Azure OpenAI Configuration
+client = AzureOpenAI(
+    azure_endpoint="https://api-iw.azure-api.net/sig-shared-jpeast/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
+    api_key="72fc700a6bd24963b8e4cf5d28d4e95c",
+    api_version="2025-01-01-preview"
 )
 MODEL = "gpt-4o-mini"
 

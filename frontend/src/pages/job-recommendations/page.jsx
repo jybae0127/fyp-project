@@ -17,8 +17,8 @@ export default function JobRecommendations() {
 
   // Filter state
   const [targetRoles, setTargetRoles] = useState([]);
-  const [location, setLocation] = useState('hong kong');
-  const [country, setCountry] = useState('hk');
+  const [location, setLocation] = useState('singapore');
+  const [country, setCountry] = useState('sg');
   const [useAI, setUseAI] = useState(false);
 
   // CV and application data

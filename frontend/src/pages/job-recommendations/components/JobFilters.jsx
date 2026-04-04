@@ -27,11 +27,25 @@ export default function JobFilters({
   };
 
   const countries = [
-    { code: 'hk', name: 'Hong Kong', defaultLocation: 'hong kong' },
     { code: 'sg', name: 'Singapore', defaultLocation: 'singapore' },
     { code: 'gb', name: 'United Kingdom', defaultLocation: 'london' },
     { code: 'us', name: 'United States', defaultLocation: 'new york' },
     { code: 'au', name: 'Australia', defaultLocation: 'sydney' },
+    { code: 'ca', name: 'Canada', defaultLocation: 'toronto' },
+    { code: 'de', name: 'Germany', defaultLocation: 'berlin' },
+    { code: 'fr', name: 'France', defaultLocation: 'paris' },
+    { code: 'in', name: 'India', defaultLocation: 'bangalore' },
+    { code: 'nl', name: 'Netherlands', defaultLocation: 'amsterdam' },
+    { code: 'br', name: 'Brazil', defaultLocation: 'sao paulo' },
+    { code: 'it', name: 'Italy', defaultLocation: 'milan' },
+    { code: 'es', name: 'Spain', defaultLocation: 'madrid' },
+    { code: 'nz', name: 'New Zealand', defaultLocation: 'auckland' },
+    { code: 'pl', name: 'Poland', defaultLocation: 'warsaw' },
+    { code: 'be', name: 'Belgium', defaultLocation: 'brussels' },
+    { code: 'ch', name: 'Switzerland', defaultLocation: 'zurich' },
+    { code: 'at', name: 'Austria', defaultLocation: 'vienna' },
+    { code: 'mx', name: 'Mexico', defaultLocation: 'mexico city' },
+    { code: 'za', name: 'South Africa', defaultLocation: 'johannesburg' },
   ];
 
   const handleCountryChange = (e) => {
