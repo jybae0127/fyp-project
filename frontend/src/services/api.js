@@ -58,54 +58,56 @@ export async function logout() {
  * @param onProgress - Callback for progress updates
  * @returns Promise that resolves with the final ProcessResponse
  */
-export function processApplicationsWithProgress(
+export async function processApplicationsWithProgress(
   startDate,
   endDate,
   refresh,
   onProgress
 ) {
-  return new Promise((resolve, reject) => {
-    // Build URL with date parameters
-    let url = `${LOCAL_URL}/process-stream`;
-    const params = new URLSearchParams();
-    if (startDate) params.append("start_date", startDate);
-    if (endDate) params.append("end_date", endDate);
-    if (refresh) params.append("refresh", "true");
-    params.append("ngrok-skip-browser-warning", "true");
-    if (params.toString()) url += `?${params.toString()}`;
+  // Build URL with date parameters
+  let url = `${LOCAL_URL}/process-stream`;
+  const params = new URLSearchParams();
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
+  if (refresh) params.append("refresh", "true");
+  if (params.toString()) url += `?${params.toString()}`;
 
-    const eventSource = new EventSource(url);
+  const response = await fetch(url, { headers: NGROK_HEADERS });
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
+  if (!response.ok) {
+    throw new Error("Connection to server lost");
+  }
 
-        // Call progress callback for all events
-        if (onProgress) {
-          onProgress(data);
-        }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
 
-        // Handle completion
-        if (data.type === "done" || data.type === "cached") {
-          eventSource.close();
-          const result = data.data;
-          if (result?.error) {
-            reject(new Error(result.error));
-          } else {
-            resolve(result || { companies: [], total_companies: 0, total_applications: 0 });
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop(); // keep incomplete line in buffer
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (onProgress) onProgress(data);
+          if (data.type === "done" || data.type === "cached") {
+            const result = data.data;
+            if (result?.error) throw new Error(result.error);
+            return result || { companies: [], total_companies: 0, total_applications: 0 };
           }
+        } catch (e) {
+          console.error("Error parsing SSE event:", e);
         }
-      } catch (e) {
-        console.error("Error parsing SSE event:", e);
       }
-    };
+    }
+  }
 
-    eventSource.onerror = (error) => {
-      console.error("SSE error:", error);
-      eventSource.close();
-      reject(new Error("Connection to server lost"));
-    };
-  });
+  return { companies: [], total_companies: 0, total_applications: 0 };
 }
 
 /**
