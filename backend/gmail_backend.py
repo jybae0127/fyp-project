@@ -307,19 +307,26 @@ def fetch_all_emails(service, query, max_results=200):
 
 
 # =========================
+# Store flows between / and /callback to preserve PKCE code_verifier
+_pending_flows = {}
+
 # ROUTES
 # =========================
 @app.route('/')
 def index():
     # Always start OAuth flow - let users re-authenticate or switch accounts
     flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri=REDIRECT_URI)
-    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
+    auth_url, state = flow.authorization_url(prompt='consent', access_type='offline')
+    _pending_flows[state] = flow
     return redirect(auth_url)
 
 
 @app.route('/callback')
 def callback():
-    flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri=REDIRECT_URI)
+    state = request.args.get('state')
+    flow = _pending_flows.pop(state, None)
+    if flow is None:
+        flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri=REDIRECT_URI)
     flow.fetch_token(authorization_response=request.url)
     creds = flow.credentials
 
