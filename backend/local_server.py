@@ -1725,6 +1725,8 @@ def search_jobs_combined(keywords, location="singapore", country="sg", page=1, r
 def extract_keywords_from_cv(cv_sections):
     """Extract relevant keywords from CV sections for job search."""
     keywords = []
+    if not cv_sections:
+        return keywords
 
     if cv_sections.get("skills"):
         skills = cv_sections["skills"]
@@ -1772,7 +1774,7 @@ def calculate_job_match_score(job, cv_sections, applications, target_roles=None)
     job_company = (company.get("display_name") if isinstance(company, dict) else company or "").lower()
 
     # Check skill matches
-    if cv_sections.get("skills"):
+    if cv_sections and cv_sections.get("skills"):
         skills = cv_sections["skills"]
         all_skills = []
         if skills.get("technical"):
@@ -1790,7 +1792,7 @@ def calculate_job_match_score(job, cv_sections, applications, target_roles=None)
             reasons.append(f"Matches your skills: {', '.join(matched_skills[:3])}")
 
     # Check experience alignment
-    if cv_sections.get("experience"):
+    if cv_sections and cv_sections.get("experience"):
         for exp in cv_sections["experience"]:
             exp_title = (exp.get("title") or "").lower()
             if any(word in job_title for word in exp_title.split() if len(word) > 3):
@@ -1929,8 +1931,8 @@ def recommend_jobs():
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        cv_sections = data.get("cv_sections", {})
-        applications = data.get("applications", [])
+        cv_sections = data.get("cv_sections") or {}
+        applications = data.get("applications") or []
         target_roles = data.get("target_roles", [])
         location = data.get("location", "singapore")
         country = data.get("country", "sg")
