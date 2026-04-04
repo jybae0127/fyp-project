@@ -461,7 +461,7 @@ export default function Dashboard() {
                   const year = new Date().getFullYear();
                   const text = `🚀 My Job Search Journey ${year}\n\n📋 Applications: ${total}\n🤝 Interviews: ${interviews}\n🎉 Offers: ${offers}\n\nTracked with JobTracker AI #JobSearch #Hiring`;
                   navigator.clipboard.writeText(text);
-                  window.open('https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fjobtracker-ai.vercel.app', '_blank');
+                  window.open('https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fyouraijobtracker.vercel.app', '_blank');
                   setLinkedInToast(true);
                   setTimeout(() => setLinkedInToast(false), 5000);
                 }}
