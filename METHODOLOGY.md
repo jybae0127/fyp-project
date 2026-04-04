@@ -85,25 +85,27 @@ The system tracks job applications through the following standardized pipeline s
 │                              SYSTEM ARCHITECTURE                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌──────────────┐      ┌──────────────────┐      ┌───────────────────────┐  │
-│  │   Frontend   │      │  Render Backend  │      │      AWS EC2          │  │
-│  │   (React)    │◄────►│  (gmail_backend) │◄────►│   (local_server.py)   │  │
-│  │   Vercel     │      │                  │      │                       │  │
-│  │  - Dashboard │      │  - OAuth Handler │      │  - Email Processing   │  │
-│  │  - Charts    │      │  - Gmail API     │      │  - AI Classification  │  │
-│  │  - Timeline  │      │  - Token Storage │      │  - Caching Layer      │  │
-│  │  - CV Upload │      └──────────────────┘      │  - Job Search         │  │
-│  │  - Job Recs  │               │                │  - CV Analysis        │  │
-│  └──────────────┘               ▼                └───────────────────────┘  │
-│         │              ┌──────────────────┐               │                │
-│         │              │   Google APIs    │               ▼                │
-│         │              │   (Gmail)        │      ┌───────────────────────┐  │
-│         │              └──────────────────┘      │   OpenAI API          │  │
-│         │                                        │   (GPT-4o-mini)       │  │
-│         │              ┌──────────────────┐      └───────────────────────┘  │
-│         │              │   ngrok tunnel   │                                 │
-│         └─────────────►│   (HTTPS proxy)  │                                 │
-│                        └──────────────────┘                                 │
+│  ┌──────────────┐      ┌────────────────────────────────────────────────┐  │
+│  │   Frontend   │      │                  AWS EC2 t2.micro              │  │
+│  │   (React)    │      │  ┌─────────────────────────────────────────┐  │  │
+│  │   Vercel     │      │  │  nginx (ports 80/443, Let's Encrypt SSL) │  │  │
+│  │  - Dashboard │      │  │  jobtracker-auth.ddns.net → :5678       │  │  │
+│  │  - Charts    │◄────►│  │  jobtracker-api.ddns.net  → :5001       │  │  │
+│  │  - Timeline  │      │  └──────────┬──────────────────┬───────────┘  │  │
+│  │  - CV Upload │      │             │                  │               │  │
+│  │  - Job Recs  │      │  ┌──────────▼──────┐  ┌───────▼─────────────┐ │  │
+│  └──────────────┘      │  │ gmail_backend   │  │  local_server.py    │ │  │
+│                        │  │ (OAuth Handler) │  │  - Email Processing  │ │  │
+│                        │  │ - Gmail API     │  │  - AI Classification │ │  │
+│                        │  │ - Token Storage │  │  - Caching Layer     │ │  │
+│                        │  └──────────┬──────┘  │  - Job Search        │ │  │
+│                        │             │          │  - CV Analysis       │ │  │
+│                        └─────────────┼──────────┴──────────┬──────────┘  │
+│                                      │                      │              │
+│                             ┌────────▼────────┐   ┌────────▼────────┐     │
+│                             │   Google APIs   │   │   OpenAI API    │     │
+│                             │   (Gmail)       │   │  (GPT-4o-mini)  │     │
+│                             └─────────────────┘   └─────────────────┘     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -344,10 +346,10 @@ Step 5: "Building your dashboard..."
 
 | Endpoint | Method | Server | Purpose |
 |----------|--------|--------|---------|
-| `/callback` | GET | Render | OAuth callback handler |
-| `/status` | GET | Render | Check authentication status |
-| `/user-info` | GET | Render | Get user email/profile |
-| `/logout` | GET | Render | Clear authentication |
+| `/callback` | GET | EC2 (auth) | OAuth callback handler |
+| `/status` | GET | EC2 (auth) | Check authentication status |
+| `/user-info` | GET | EC2 (auth) | Get user email/profile |
+| `/logout` | GET | EC2 (auth) | Clear authentication |
 | `/process` | GET | EC2 | Full analysis |
 | `/process-stream` | GET | EC2 | SSE progress stream |
 | `/applications` | GET | EC2 | Get cached applications |
@@ -367,35 +369,39 @@ Step 5: "Building your dashboard..."
 Cloud Deployment:
 ├── Frontend (React/Vite) → Vercel (youraijobtracker.vercel.app)
 │     └── vercel.json: rewrites all routes → index.html (SPA routing)
-├── Auth Server (gmail_backend.py) → Render (jobtracker-auth.ddns.net)
-└── AI Processing Server (local_server.py) → AWS EC2 t2.micro (3.27.96.124)
-      └── ngrok HTTPS tunnel (ermined-zayden-bromic.ngrok-free.dev)
-            (required: Vercel is HTTPS, EC2 is HTTP — mixed content fix)
+└── AWS EC2 t2.micro (3.27.96.124)
+      ├── nginx reverse proxy (ports 80/443) + Let's Encrypt SSL (certbot)
+      │     ├── jobtracker-auth.ddns.net → localhost:5678 (gmail_backend.py)
+      │     └── jobtracker-api.ddns.net  → localhost:5001 (local_server.py)
+      ├── Auth Server (gmail_backend.py) — Gmail OAuth 2.0
+      └── AI Processing Server (local_server.py) — email analysis, job recommendations
 ```
 
 **Environment Variables:**
 ```
-Render:
-- GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI
-
 EC2 (~/.bashrc):
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- REDIRECT_URI (https://jobtracker-auth.ddns.net/callback)
 - OPENAI_API_KEY
 
 Frontend (api.js):
 - RENDER_URL: https://jobtracker-auth.ddns.net
-- LOCAL_URL: https://ermined-zayden-bromic.ngrok-free.dev
+- LOCAL_URL: https://jobtracker-api.ddns.net
 ```
 
 **EC2 Startup (after reboot):**
 ```bash
-# Start Flask server
+# nginx starts automatically via systemd
+
+# Start AI processing server
 tmux new -s server
 cd ~/fyp-project/backend && python3 local_server.py
 # Ctrl+B D to detach
 
-# Start ngrok tunnel
-tmux new -s ngrok
-ngrok http --domain=ermined-zayden-bromic.ngrok-free.dev 5001
+# Start auth server
+tmux new -s auth
+cd ~/fyp-project/backend && python3 gmail_backend.py
 # Ctrl+B D to detach
 ```
 
@@ -403,8 +409,9 @@ ngrok http --domain=ermined-zayden-bromic.ngrok-free.dev 5001
 - OAuth tokens stored server-side only (not in browser)
 - CORS configured for all origins (`flask_cors`)
 - No sensitive data in client-side storage
-- HTTPS enforced via ngrok tunnel
+- HTTPS enforced via nginx + Let's Encrypt (auto-renewing certificates)
 - OpenAI API key stored as environment variable (not in code)
+- Gmail API scope limited to `gmail.readonly` (no write access)
 
 ---
 

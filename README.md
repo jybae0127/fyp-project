@@ -29,19 +29,19 @@ Existing platforms like LinkedIn and Glassdoor help you discover job opportuniti
 | Frontend | React 19, Vite, Tailwind CSS |
 | Frontend Hosting | Vercel |
 | AI Processing Server | Python, Flask (AWS EC2) |
-| Auth Server | Python, Flask (Render) |
+| Auth Server | Python, Flask (AWS EC2) |
 | AI | OpenAI API (GPT-4o-mini) |
 | Auth | Google OAuth 2.0 |
 | API | Gmail API, Adzuna Jobs API |
-| Tunnel | ngrok (HTTPS for EC2) |
+| Reverse Proxy | nginx + Let's Encrypt SSL |
 
 ## Architecture
 
 ```
 Browser (Vercel)
-    ├── Gmail OAuth  →  gmail_backend.py (Render)
-    └── AI Processing  →  local_server.py (AWS EC2 via ngrok)
-                               └── OpenAI API (GPT-4o-mini)
+    ├── Gmail OAuth  →  jobtracker-auth.ddns.net  →  nginx  →  gmail_backend.py (EC2 :5678)
+    └── AI Processing  →  jobtracker-api.ddns.net  →  nginx  →  local_server.py (EC2 :5001)
+                                                                       └── OpenAI API (GPT-4o-mini)
 ```
 
 ## Project Structure
