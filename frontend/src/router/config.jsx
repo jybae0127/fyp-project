@@ -1,6 +1,6 @@
 
 import NotFound from "../pages/NotFound";
-import Home from "../pages/home/home";
+import Home from "../pages/home/Home";
 import Dashboard from "../pages/dashboard/page";
 import CVAnalysis from "../pages/cv-analysis/page";
 import JobRecommendations from "../pages/job-recommendations/page";
