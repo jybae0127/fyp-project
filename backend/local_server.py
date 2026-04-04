@@ -26,7 +26,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Render backend URL for fetching emails
-RENDER_URL = "https://gmail-login-backend.onrender.com"
+RENDER_URL = "https://jobtracker-auth.ddns.net"
 
 # Adzuna Job Search API
 ADZUNA_APP_ID = "b252cd26"

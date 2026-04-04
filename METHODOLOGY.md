@@ -367,7 +367,7 @@ Step 5: "Building your dashboard..."
 Cloud Deployment:
 ├── Frontend (React/Vite) → Vercel (youraijobtracker.vercel.app)
 │     └── vercel.json: rewrites all routes → index.html (SPA routing)
-├── Auth Server (gmail_backend.py) → Render (gmail-login-backend.onrender.com)
+├── Auth Server (gmail_backend.py) → Render (jobtracker-auth.ddns.net)
 └── AI Processing Server (local_server.py) → AWS EC2 t2.micro (3.27.96.124)
       └── ngrok HTTPS tunnel (ermined-zayden-bromic.ngrok-free.dev)
             (required: Vercel is HTTPS, EC2 is HTTP — mixed content fix)
@@ -382,7 +382,7 @@ EC2 (~/.bashrc):
 - OPENAI_API_KEY
 
 Frontend (api.js):
-- RENDER_URL: https://gmail-login-backend.onrender.com
+- RENDER_URL: https://jobtracker-auth.ddns.net
 - LOCAL_URL: https://ermined-zayden-bromic.ngrok-free.dev
 ```
 

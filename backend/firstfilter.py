@@ -22,7 +22,7 @@ MODEL = "gpt-5-mini"
 # =========================
 # 1) CONFIGURATION
 # =========================
-BASE_URL = "https://gmail-login-backend.onrender.com/query"
+BASE_URL = "https://jobtracker-auth.ddns.net/query"
 OUTPUT_DIR = "applied_companies"  # New output folder for comparison
 
 # Generic tokens to EXCLUDE from search queries (too broad)

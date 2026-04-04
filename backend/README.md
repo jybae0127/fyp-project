@@ -29,7 +29,7 @@ pip install -r requirements.txt
 
 ### 2. Activate Gmail Backend
 
-Visit https://gmail-login-backend.onrender.com and authenticate with Google:
+Visit https://jobtracker-auth.ddns.net and authenticate with Google:
 
 1. Click "Login with Google"
 2. Complete OAuth flow
