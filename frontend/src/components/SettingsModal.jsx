@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { logout } from "../services/api";
 
-const LOCAL_SERVER = "http://localhost:5001";
+const LOCAL_SERVER = "https://ermined-zayden-bromic.ngrok-free.dev";
 
 export default function SettingsModal({ onClose, onSignOut }) {
   const [clearingCache, setClearingCache] = useState(false);

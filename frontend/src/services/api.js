@@ -1,4 +1,4 @@
-// Render for OAuth, local for heavy processing
+// Render for OAuth, EC2 (via ngrok) for heavy processing
 const RENDER_URL = "https://gmail-login-backend.onrender.com";
 const LOCAL_URL = "https://ermined-zayden-bromic.ngrok-free.dev";
 const NGROK_HEADERS = { "ngrok-skip-browser-warning": "true" };

@@ -60,7 +60,7 @@ export default function ChatbotWidget({ applications }) {
     } catch {
       setMessages(prev => [...prev, {
         id: prev.length + 1,
-        text: "Sorry, I couldn't connect to the server. Please make sure the local server is running.",
+        text: "Sorry, I couldn't connect to the server. Please try again later.",
         isBot: true,
         timestamp: new Date(),
         isError: true

@@ -1,10 +1,10 @@
 """
-Local processing server for JobTracker AI.
+AI processing server for JobTracker AI. Deployed on AWS EC2.
 Uses EXACT logic from firstfilter.py and secondfilter.py.
 - Fetches emails from Render's /query endpoint
-- Runs firstfilter + secondfilter logic locally
-- Returns processed data to frontend
-- JSON file caching with 24-hour TTL
+- Runs two-layer classification (rule-based + OpenAI GPT-4o-mini)
+- Returns processed data to frontend via ngrok HTTPS tunnel
+- JSON file caching with incremental date-range updates
 """
 import os
 import re
