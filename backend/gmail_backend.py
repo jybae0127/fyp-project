@@ -53,7 +53,7 @@ CLIENT_CONFIG = {
     }
 }
 
-TOKEN_FILE = "/opt/render/project/token.json"
+TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "token.json")
 
 # =========================
 # GENERIC TOKENS TO EXCLUDE
@@ -327,7 +327,15 @@ def callback():
     flow = _pending_flows.pop(state, None)
     if flow is None:
         flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri=REDIRECT_URI)
-    flow.fetch_token(authorization_response=request.url)
+
+    # Fix scheme: nginx proxies internally as http but OAuth expects https
+    auth_response = request.url
+    if auth_response.startswith('http://'):
+        auth_response = 'https://' + auth_response[7:]
+
+    # Explicitly extract and pass code_verifier for PKCE
+    code_verifier = getattr(flow, 'code_verifier', None) or getattr(flow.oauth2session, '_code_verifier', None)
+    flow.fetch_token(authorization_response=auth_response, code_verifier=code_verifier)
     creds = flow.credentials
 
     with open(TOKEN_FILE, 'w') as token:
