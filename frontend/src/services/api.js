@@ -1,6 +1,7 @@
 // Render for OAuth, local for heavy processing
 const RENDER_URL = "https://gmail-login-backend.onrender.com";
 const LOCAL_URL = "https://ermined-zayden-bromic.ngrok-free.dev";
+const NGROK_HEADERS = { "ngrok-skip-browser-warning": "true" };
 
 /**
  * Check if the backend is authenticated with Gmail
@@ -70,6 +71,7 @@ export function processApplicationsWithProgress(
     if (startDate) params.append("start_date", startDate);
     if (endDate) params.append("end_date", endDate);
     if (refresh) params.append("refresh", "true");
+    params.append("ngrok-skip-browser-warning", "true");
     if (params.toString()) url += `?${params.toString()}`;
 
     const eventSource = new EventSource(url);
@@ -122,7 +124,7 @@ export async function processApplications(startDate, endDate, refresh) {
     if (refresh) params.append("refresh", "true");
     if (params.toString()) url += `?${params.toString()}`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: NGROK_HEADERS });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -239,7 +241,7 @@ export async function addApplication(
   try {
     const response = await fetch(`${LOCAL_URL}/applications/add`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...NGROK_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify({ company, position }),
     });
 
@@ -275,7 +277,7 @@ export async function updateApplication(
 
     const response = await fetch(`${LOCAL_URL}/applications/update`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...NGROK_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
@@ -305,7 +307,7 @@ export async function deleteApplication(
 
     const response = await fetch(`${LOCAL_URL}/applications/delete`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...NGROK_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
@@ -325,7 +327,7 @@ export async function deleteApplication(
  */
 export async function getApplications() {
   try {
-    const response = await fetch(`${LOCAL_URL}/applications`);
+    const response = await fetch(`${LOCAL_URL}/applications`, { headers: NGROK_HEADERS });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Failed to get applications");
@@ -350,6 +352,7 @@ export async function sendChatMessage(
     const response = await fetch(`${LOCAL_URL}/chat`, {
       method: "POST",
       headers: {
+        ...NGROK_HEADERS,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -382,6 +385,7 @@ export async function uploadCV(file) {
 
     const response = await fetch(`${LOCAL_URL}/cv/upload`, {
       method: "POST",
+      headers: NGROK_HEADERS,
       body: formData,
     });
 
@@ -410,6 +414,7 @@ export async function analyzeCV(cvText, sections, applications, targetRoles = []
     const response = await fetch(`${LOCAL_URL}/cv/analyze`, {
       method: "POST",
       headers: {
+        ...NGROK_HEADERS,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -449,7 +454,7 @@ export async function searchJobs(keywords, location = "hong kong", country = "hk
       page: page.toString()
     });
 
-    const response = await fetch(`${LOCAL_URL}/jobs/search?${params}`);
+    const response = await fetch(`${LOCAL_URL}/jobs/search?${params}`, { headers: NGROK_HEADERS });
     const data = await response.json();
 
     if (!response.ok) {
@@ -477,6 +482,7 @@ export async function getJobRecommendations(cvSections, applications, targetRole
     const response = await fetch(`${LOCAL_URL}/jobs/recommend`, {
       method: "POST",
       headers: {
+        ...NGROK_HEADERS,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
