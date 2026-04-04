@@ -27,10 +27,17 @@ The system tracks job applications through the following standardized pipeline s
 - Visual pipeline representation (Sankey diagram, funnel chart)
 - Application timeline view
 - Real-time processing progress indicators
+- Manual application entry and editing
+
+**Extended Features (v1.1 — Implemented):**
+- CV upload and AI-powered analysis against application history
+- Personalized job recommendations via Adzuna API
+- LinkedIn share button with auto-generated stats summary
+- AI chatbot assistant with application context
+- Performance analytics and weekly progress charts
 
 **Deferred Features (Future Versions):**
 - Multi-email provider support (Outlook, Yahoo)
-- Manual application entry
 - Interview calendar integration
 - Email notifications for stage changes
 - Export functionality (CSV, PDF reports)
@@ -41,10 +48,10 @@ The system tracks job applications through the following standardized pipeline s
 | Data Type | Storage Location | Retention |
 |-----------|------------------|-----------|
 | OAuth tokens | Server-side (Render) | Session-based, cleared on logout |
-| Extracted metadata | Local cache (JSON) | Permanent until manual clear |
-| Company names | Local cache | Permanent |
-| Stage classifications | Local cache | Permanent |
-| Application dates | Local cache | Permanent |
+| Extracted metadata | EC2 cache (JSON) | Permanent until manual clear |
+| Company names | EC2 cache | Permanent |
+| Stage classifications | EC2 cache | Permanent |
+| Application dates | EC2 cache | Permanent |
 
 **Data NOT Stored:**
 - Raw email body content (processed in-memory only)
@@ -55,7 +62,6 @@ The system tracks job applications through the following standardized pipeline s
 **Privacy Constraints:**
 - Gmail API scope limited to `gmail.readonly` (no write access)
 - No raw emails stored on any server
-- All processing occurs locally on user's machine
 - OAuth 2.0 with consent prompt for transparency
 
 ### 1.4 Evaluation Criteria
@@ -80,33 +86,34 @@ The system tracks job applications through the following standardized pipeline s
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────────┐      ┌──────────────────┐      ┌───────────────────────┐  │
-│  │   Frontend   │      │  Render Backend  │      │      AWS Server       │  │
-│  │   (React)    │◄────►│  (gmail_backend) │◄────►│                       │  │
-│  │              │      │                  │      │                       │  │
+│  │   Frontend   │      │  Render Backend  │      │      AWS EC2          │  │
+│  │   (React)    │◄────►│  (gmail_backend) │◄────►│   (local_server.py)   │  │
+│  │   Vercel     │      │                  │      │                       │  │
 │  │  - Dashboard │      │  - OAuth Handler │      │  - Email Processing   │  │
 │  │  - Charts    │      │  - Gmail API     │      │  - AI Classification  │  │
 │  │  - Timeline  │      │  - Token Storage │      │  - Caching Layer      │  │
-│  └──────────────┘      └──────────────────┘      └───────────────────────┘  │
-│         │                       │                          │                │
-│         │                       ▼                          ▼                │
-│         │              ┌──────────────────┐      ┌───────────────────────┐  │
-│         │              │   Google APIs    │      │   Azure OpenAI        │  │
-│         │              │   (Gmail)        │      │   (GPT-4o-mini)       │  │
-│         │              └──────────────────┘      └───────────────────────┘  │
-│         │                                                                   │
-│         ▼                                                                   │
-│   ┌──────────────────────────────────────────────────────────────────────┐  │
-│   │                        Processing Pipeline                           │  │
-│   │                                                                      │  │
-│   │  OAuth Login → Token Store → Cache Check →                           │  │
-│   │  (Hit → Response) | (Miss → Gmail Query → Fetch Messages →           │  │
-│   │  Parse Headers → Extract Body → Layer A Filter → Layer B AI →        │  │
-│   │  Stage Classification → Company Grouping → Cache Write → Response)   │  │
-│   │                                                                      │  │
-│   └──────────────────────────────────────────────────────────────────────┘  │
+│  │  - CV Upload │      └──────────────────┘      │  - Job Search         │  │
+│  │  - Job Recs  │               │                │  - CV Analysis        │  │
+│  └──────────────┘               ▼                └───────────────────────┘  │
+│         │              ┌──────────────────┐               │                │
+│         │              │   Google APIs    │               ▼                │
+│         │              │   (Gmail)        │      ┌───────────────────────┐  │
+│         │              └──────────────────┘      │   OpenAI API          │  │
+│         │                                        │   (GPT-4o-mini)       │  │
+│         │              ┌──────────────────┐      └───────────────────────┘  │
+│         │              │   ngrok tunnel   │                                 │
+│         └─────────────►│   (HTTPS proxy)  │                                 │
+│                        └──────────────────┘                                 │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+```
 
-
+**Processing Pipeline:**
+```
+OAuth Login → Token Store → Cache Check →
+(Hit → Response) | (Miss → Gmail Query → Fetch Messages →
+Parse Headers → Extract Body → Layer A Filter → Layer B AI →
+Stage Classification → Company Grouping → Cache Write → SSE Response)
 ```
 
 ### 2.2 Two-Layer Classification System
@@ -136,7 +143,6 @@ SKIP_PATTERNS = [
     r"zendesk\.com",           # Support tickets
     r"Ticket\s*#\d+",          # Ticket numbers
     r"theforage\.com.*Build skills",  # Marketing emails
-    r"Your Cluely Digest",     # Newsletters
     r"credly\.com",            # Credential badges
 ]
 
@@ -158,16 +164,15 @@ STAGE_PATTERNS = {
 }
 ```
 
-**Layer A Output:**
-- Filtered email list (job-related only)
-- Pre-detected stages (high confidence)
-- Sender domain classification
-
 #### Layer B: AI Refinement (LLM-Based)
 
 **Purpose:** Handle ambiguous cases, extract company names from ATS emails, and provide nuanced stage classification.
 
-**Implementation:**
+**Model Configuration:**
+- Model: OpenAI GPT-4o-mini
+- Temperature: 0.1 (deterministic outputs)
+- Max tokens: Adaptive based on email count
+- Parallel processing: ThreadPoolExecutor for concurrent company analysis
 
 **Step 1: Company Extraction**
 ```python
@@ -205,11 +210,6 @@ OUTPUT JSON:
 """
 ```
 
-**Model Configuration:**
-- Model: Azure OpenAI GPT-4o-mini
-- Temperature: 0.1 (deterministic outputs)
-- Max tokens: Adaptive based on email count
-
 ### 2.3 Pagination, Rate Limits & Incremental Updates
 
 **Gmail API Pagination:**
@@ -234,12 +234,7 @@ def fetch_emails_from_render(query, max_loops=10):
     return all_msgs
 ```
 
-**Rate Limit Handling:**
-- Gmail API quota: 250 quota units per user per second
-- Implementation: Sequential fetching with automatic backoff
-- Batch processing: 50 messages per request
-
-**Incremental Update Strategy (Planned):**
+**Incremental Update Strategy:**
 ```
 Cache Structure:
 {
@@ -252,7 +247,7 @@ Cache Structure:
 Update Logic:
 - If user extends date range backwards → fetch only new date range
 - If user clicks "Refresh" → fetch only emails since cached_end
-- Merge new results with existing cache
+- Merge new results with existing cache (preserving manual entries)
 ```
 
 ---
@@ -280,33 +275,6 @@ Analysis of 200+ recruitment emails from 50+ companies revealed common patterns:
 | Assessment Platform | @hackerrank.com, @hirevue.com | Link to parent application |
 | Recruiter Personal | @gmail.com, @outlook.com | Extract company from signature/body |
 
-**Body Content Signals:**
-```
-Application Stage:
-- "We have received your application"
-- "Your application for [Position] has been submitted"
-
-Assessment Stage:
-- "Please complete the following assessment"
-- "You have been invited to take"
-- Links to: hackerrank.com, hirevue.com, shl.com
-
-Interview Stage:
-- "We would like to invite you for an interview"
-- "Please select a time slot"
-- Calendar links: calendly.com, outlook.com/booking
-
-Rejection Stage:
-- "After careful consideration"
-- "We will not be moving forward"
-- "We encourage you to apply again"
-
-Offer Stage:
-- "We are pleased to offer you"
-- "Congratulations!"
-- Attachment: offer_letter.pdf
-```
-
 ### 3.2 Rule Development Process
 
 **Iteration Cycle:**
@@ -327,45 +295,15 @@ Offer Stage:
 | Non-English emails | Pattern mismatch | Add multilingual patterns (Chinese, Korean) |
 | Auto-rejection (ATS) | No human review | Detect "did not meet requirements" pattern |
 
-### 3.3 Test Dataset
-
-**Labeled Test Set (50 emails):**
-```
-Distribution:
-- Application Submitted: 15 emails
-- Assessment Invitations: 10 emails
-- Interview Requests: 8 emails
-- Rejections: 12 emails
-- Offers: 5 emails
-
-Companies Represented:
-- Big Tech: Google, Microsoft, Amazon, Meta
-- Finance: Goldman Sachs, Morgan Stanley, BlackRock
-- Consulting: McKinsey, BCG, Bain
-- Startups: Various (10+ companies)
-```
-
 ---
 
 ## 4. Frontend Visualization & UX Implementation
 
 ### 4.1 Dashboard Components
 
-**Statistics Overview:**
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Total Applications: 45    Active: 28    Response Rate: 62% │
-│  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐     │
-│  │ 45  │  │ 12  │  │  8  │  │ 15  │  │  3  │  │  7  │     │
-│  │Total│  │Test │  │ IV  │  │Pend │  │Offer│  │ Rej │     │
-│  └─────┘  └─────┘  └─────┘  └─────┘  └─────┘  └─────┘     │
-└─────────────────────────────────────────────────────────────┘
-```
+**Statistics Overview:** Total applications, active applications, interview rate, offer rate
 
-**Sankey Diagram:**
-- Visual flow from Application → various stages → Offer/Rejection
-- Width represents number of applications at each stage
-- Interactive: hover for details, click to filter
+**Sankey Diagram:** Visual flow from Application → various stages → Offer/Rejection
 
 **Application Funnel:**
 ```
@@ -375,32 +313,17 @@ Interview       ████████                      15 (33%)
 Offer           ██                             3 (7%)
 ```
 
-**Timeline View:**
-- Company-grouped application history
-- Stage progression with dates
-- Status indicators (pending/rejected/offer)
+**Timeline View:** Company-grouped application history with stage progression and dates
 
-### 4.2 User Controls
+**Performance Analytics:** Weekly application activity, response rates, stage conversion rates
 
-**Date Range Selection:**
-- Start date picker (default: 6 months ago)
-- End date picker (default: today)
-- "Analyze Emails" button triggers processing
+**CV Analysis:** Upload PDF/DOCX CV → AI compares against application history → improvement suggestions
 
-**Filtering & Search:**
-- Filter by company name
-- Filter by stage
-- Filter by status (pending/rejected/offer)
-- Date range filter on timeline
+**Job Recommendations:** Based on CV skills + application history → Adzuna API job search
 
-**Refresh Control:**
-- "Refresh" button in header
-- Bypasses cache, fetches latest emails
-- Shows real-time progress via SSE
+### 4.2 Real-Time Progress Feedback
 
-### 4.3 Real-Time Progress Feedback
-
-**Server-Sent Events (SSE) Implementation:**
+**Fetch-Based SSE Implementation** (used instead of native EventSource to support custom headers):
 ```
 Progress Stages:
 Step 0: "Fetching email data..." (with email count)
@@ -411,12 +334,6 @@ Step 4: "Classifying by stage..."
 Step 5: "Building your dashboard..."
 ```
 
-**UI Feedback:**
-- Animated progress bar
-- Step-by-step checklist with icons
-- Current operation highlighted
-- Completion checkmarks for finished steps
-
 ---
 
 ## 5. Integration, Testing, and Deployment
@@ -425,100 +342,69 @@ Step 5: "Building your dashboard..."
 
 **REST Endpoints:**
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/` | GET | OAuth redirect (Render) |
-| `/callback` | GET | OAuth callback handler |
-| `/status` | GET | Check authentication status |
-| `/user-info` | GET | Get user email/profile |
-| `/logout` | GET | Clear authentication |
-| `/query` | GET | Raw Gmail query (Render) |
-| `/process` | GET | Full analysis (Local) |
-| `/process-stream` | GET | SSE progress stream (Local) |
-| `/cache-info` | GET | View cache status |
-| `/clear-cache` | GET | Clear local cache |
+| Endpoint | Method | Server | Purpose |
+|----------|--------|--------|---------|
+| `/callback` | GET | Render | OAuth callback handler |
+| `/status` | GET | Render | Check authentication status |
+| `/user-info` | GET | Render | Get user email/profile |
+| `/logout` | GET | Render | Clear authentication |
+| `/process` | GET | EC2 | Full analysis |
+| `/process-stream` | GET | EC2 | SSE progress stream |
+| `/applications` | GET | EC2 | Get cached applications |
+| `/applications/add` | POST | EC2 | Add manual application |
+| `/applications/update` | PUT | EC2 | Edit application |
+| `/applications/delete` | DELETE | EC2 | Delete application |
+| `/cv/upload` | POST | EC2 | Upload and parse CV |
+| `/cv/analyze` | POST | EC2 | AI CV analysis |
+| `/jobs/search` | GET | EC2 | Adzuna job search |
+| `/jobs/recommend` | POST | EC2 | Personalized job recommendations |
+| `/chat` | POST | EC2 | AI chatbot |
 
-**Frontend API Service:**
-```typescript
-// Authentication
-checkAuthStatus(): Promise<boolean>
-getUserInfo(): Promise<UserInfo>
-logout(): Promise<boolean>
-
-// Processing
-processApplications(startDate, endDate, refresh): Promise<ProcessResponse>
-processApplicationsWithProgress(startDate, endDate, refresh, onProgress): Promise<ProcessResponse>
-
-// Data Transformation
-transformToApplications(data): Application[]
-calculateStats(applications): Stats
-```
-
-### 5.2 Testing Strategy
-
-**Unit Tests:**
-| Component | Test Cases |
-|-----------|------------|
-| Email Parser | HTML extraction, multipart handling, encoding |
-| Stage Detector | Pattern matching accuracy, edge cases |
-| Company Extractor | ATS domain handling, name normalization |
-| Date Parser | Various date formats, timezone handling |
-| JSON Extractor | GPT response parsing, malformed JSON recovery |
-
-**Integration Tests:**
-| Flow | Validation |
-|------|------------|
-| OAuth → Token Storage | Token persists across requests |
-| Query → Parse → Classify | End-to-end stage assignment |
-| Cache Write → Cache Read | Data integrity, TTL behavior |
-| SSE Stream | Progress events received in order |
-
-**User Acceptance Tests:**
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Fresh user, 50 applications | All companies detected, stages accurate |
-| Refresh after 1 week | New emails detected and classified |
-| Date range change | Correct filtering, no data loss |
-| Logout and re-login | Clean state, re-authentication works |
-
-### 5.3 Deployment Architecture
-
-**Development Environment:**
-```
-Local Machine:
-├── Frontend (Vite dev server) → localhost:5173
-├── Local Server (Flask) → localhost:5001
-└── Render Backend (OAuth) → gmail-login-backend.onrender.com
-```
+### 5.2 Deployment Architecture
 
 **Production Environment:**
 ```
 Cloud Deployment:
-├── Frontend → Vercel/Netlify (Static hosting)
-├── Local Server → User's machine (Electron app) OR Cloud function
-└── Render Backend → render.com (OAuth + Gmail API proxy)
+├── Frontend (React/Vite) → Vercel (youraijobtracker.vercel.app)
+│     └── vercel.json: rewrites all routes → index.html (SPA routing)
+├── Auth Server (gmail_backend.py) → Render (gmail-login-backend.onrender.com)
+└── AI Processing Server (local_server.py) → AWS EC2 t2.micro (3.27.96.124)
+      └── ngrok HTTPS tunnel (ermined-zayden-bromic.ngrok-free.dev)
+            (required: Vercel is HTTPS, EC2 is HTTP — mixed content fix)
 ```
 
-**Environment Configuration:**
+**Environment Variables:**
 ```
-Render Environment Variables:
-- GOOGLE_CLIENT_ID: OAuth client ID
-- GOOGLE_CLIENT_SECRET: OAuth client secret
-- REDIRECT_URI: https://gmail-login-backend.onrender.com/callback
-- AZURE_OPENAI_ENDPOINT: Azure OpenAI API endpoint
-- AZURE_OPENAI_KEY: Azure OpenAI API key
+Render:
+- GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI
 
-Local Environment:
+EC2 (~/.bashrc):
+- OPENAI_API_KEY
+
+Frontend (api.js):
 - RENDER_URL: https://gmail-login-backend.onrender.com
-- Local cache path: ./cache.json
+- LOCAL_URL: https://ermined-zayden-bromic.ngrok-free.dev
+```
+
+**EC2 Startup (after reboot):**
+```bash
+# Start Flask server
+tmux new -s server
+cd ~/fyp-project/backend && python3 local_server.py
+# Ctrl+B D to detach
+
+# Start ngrok tunnel
+tmux new -s ngrok
+ngrok http --domain=ermined-zayden-bromic.ngrok-free.dev 5001
+# Ctrl+B D to detach
 ```
 
 **Security Measures:**
 - OAuth tokens stored server-side only (not in browser)
-- CORS configured for specific origins
+- CORS configured for all origins (`flask_cors`)
 - No sensitive data in client-side storage
-- HTTPS enforced on all endpoints
-- Rate limiting on API endpoints
+- HTTPS enforced via ngrok tunnel
+- OpenAI API key stored as environment variable (not in code)
 
 ---
 
@@ -526,10 +412,10 @@ Local Environment:
 
 This methodology describes a systematic approach to building an automated job application tracker:
 
-1. **Scope Definition** - Clear stage definitions, MVP features, privacy boundaries, and success metrics
-2. **Pipeline Design** - Two-layer classification (rule-based + AI), pagination handling, caching strategy
-3. **Pattern Analysis** - Empirical email analysis, iterative rule development, edge case handling
-4. **Frontend Implementation** - Dashboard visualizations, user controls, real-time feedback
-5. **Deployment** - API integration, multi-level testing, secure cloud deployment
+1. **Scope Definition** — Clear stage definitions, MVP + extended features, privacy boundaries, and success metrics
+2. **Pipeline Design** — Two-layer classification (rule-based + AI), incremental caching, parallel processing
+3. **Pattern Analysis** — Empirical email analysis, iterative rule development, edge case handling
+4. **Frontend Implementation** — Dashboard visualizations, CV analysis, job recommendations, LinkedIn sharing
+5. **Deployment** — Vercel (frontend) + Render (OAuth) + AWS EC2 + ngrok (HTTPS tunnel)
 
-The system prioritizes user privacy (read-only access, no raw storage), accuracy (two-layer classification), and performance (caching, incremental updates).
+The system prioritizes user privacy (read-only access, no raw storage), accuracy (two-layer classification), and performance (incremental caching, parallel AI processing).
