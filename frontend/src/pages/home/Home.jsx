@@ -7,8 +7,6 @@ import Solution from "./components/Solution";
 import ValueProps from "./components/ValueProps";
 import Stats from "./components/Stats";
 import CTA from "./components/CTA";
-import Footer from "./components/Footer";
-
 export default function Home() {
   return (
     <>
@@ -21,7 +19,6 @@ export default function Home() {
       <ValueProps />
       <Stats />
       <CTA />
-      <Footer />
     </>
   );
 }
