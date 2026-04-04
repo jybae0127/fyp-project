@@ -1723,22 +1723,26 @@ def search_jobs_combined(keywords, location="singapore", country="sg", page=1, r
 
 
 def extract_keywords_from_cv(cv_sections):
-    """Extract relevant keywords from CV sections for job search."""
+    """Extract relevant keywords from CV sections for job search.
+    Prioritises job titles over raw skills since Adzuna searches job titles."""
     keywords = []
     if not cv_sections:
         return keywords
 
+    # Job titles first — most useful for job-title search APIs
+    if cv_sections.get("experience"):
+        for exp in cv_sections["experience"][:3]:
+            if exp.get("title"):
+                keywords.append(exp["title"])
+
+    # Broad skill categories (not raw tool names)
     if cv_sections.get("skills"):
         skills = cv_sections["skills"]
         if skills.get("technical"):
-            keywords.extend(skills["technical"][:5])
-        if skills.get("tools"):
-            keywords.extend(skills["tools"][:3])
-
-    if cv_sections.get("experience"):
-        for exp in cv_sections["experience"][:2]:
-            if exp.get("title"):
-                keywords.append(exp["title"])
+            # Only include multi-word or role-like skills, skip single tool names
+            for s in skills["technical"][:5]:
+                if len(s.split()) > 1 or s.lower() in ("finance", "marketing", "accounting", "consulting"):
+                    keywords.append(s)
 
     return keywords
 
@@ -1970,6 +1974,21 @@ def recommend_jobs():
                     all_jobs.append(job)
 
         raw_jobs = all_jobs[:20]  # Limit to 20 total
+
+        # Fallback: if no jobs found with extracted keywords, try generic terms
+        if not raw_jobs:
+            fallback_keywords = target_roles[:2] if target_roles else ["software engineer", "analyst"]
+            print(f"No results with extracted keywords, falling back to: {fallback_keywords}")
+            for keyword in fallback_keywords:
+                results = search_jobs_combined(keyword, location, country, page=1, results_per_page=10)
+                for job in results.get("results", []):
+                    job_id = job.get("id") or job.get("title", "")
+                    if job_id not in seen_ids:
+                        seen_ids.add(job_id)
+                        all_jobs.append(job)
+            raw_jobs = all_jobs[:20]
+            if raw_jobs:
+                keywords = fallback_keywords
 
         if not raw_jobs:
             return jsonify({
