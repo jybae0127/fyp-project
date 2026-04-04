@@ -63,21 +63,21 @@ export default function Hero() {
           <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 bg-clip-text text-transparent animate-gradient">Tracker</span>
         </h1>
 
-        <p className="text-xl font-bold text-indigo-400 mb-4 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
+        <p className="text-xl font-bold text-indigo-400 mb-4 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
           Connect your Gmail once — we handle the rest automatically.
         </p>
-        <p className="text-lg text-gray-500 mb-6 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "1.2s" }}>
+        <p className="text-lg text-gray-500 mb-6 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
           AI scans your inbox, detects job-related emails, classifies them by stage, and visualizes your entire application pipeline.
         </p>
 
         {/* One-click badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full mb-6 border border-blue-200 animate-fade-in-up" style={{ animationDelay: "1.8s" }}>
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full mb-6 border border-blue-200 animate-fade-in-up" style={{ animationDelay: "0.9s" }}>
           <i className="ri-google-fill text-red-500"></i>
           <span className="text-sm font-semibold text-gray-700">One-Click Gmail Integration</span>
           <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">FREE</span>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-3 animate-fade-in-up" style={{ animationDelay: "2.4s" }}>
+        <div className="flex flex-col sm:flex-row justify-center gap-3 animate-fade-in-up" style={{ animationDelay: "1.2s" }}>
           <button
             onClick={handleClick}
             className="btn-shine px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-xl shadow-lg transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:scale-105 hover:-translate-y-1"
@@ -102,14 +102,14 @@ export default function Hero() {
         </div>
 
         {/* Trust indicators */}
-        <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-500 animate-fade-in-up" style={{ animationDelay: "3.0s" }}>
+        <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-500 animate-fade-in-up" style={{ animationDelay: "1.5s" }}>
           <span className="flex items-center gap-1"><i className="ri-shield-check-line text-green-500"></i> Secure OAuth 2.0</span>
           <span className="flex items-center gap-1"><i className="ri-lock-line text-green-500"></i> No passwords stored</span>
           <span className="flex items-center gap-1"><i className="ri-mail-forbid-line text-green-500"></i> No raw emails stored</span>
           <span className="flex items-center gap-1"><i className="ri-time-line text-green-500"></i> Setup in 30 seconds</span>
         </div>
 
-        <div className="mt-12 relative h-[600px] overflow-hidden rounded-2xl shadow-2xl border bg-gray-100 animate-fade-in-up" style={{ animationDelay: "3.6s" }}>
+        <div className="mt-12 relative h-[600px] overflow-hidden rounded-2xl shadow-2xl border bg-gray-100 animate-fade-in-up" style={{ animationDelay: "1.8s" }}>
           {images.map((src, index) => (
             <img
               key={src}

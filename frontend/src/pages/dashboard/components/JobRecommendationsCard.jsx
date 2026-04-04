@@ -11,14 +11,7 @@ export default function JobRecommendationsCard() {
       {/* Animated glow effect */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-400 opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-300 -z-10"></div>
 
-      {/* NEW Badge with glow */}
-      <div className="absolute top-2 right-2">
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-400 text-yellow-900 animate-pulse shadow-lg shadow-yellow-400/50">
-          NEW
-        </span>
-      </div>
-
-      {/* Content - matching stat card layout */}
+{/* Content - matching stat card layout */}
       <div className="flex items-center justify-between relative z-10">
         <div>
           <p className="text-sm font-medium text-white/80 mb-1">Job Search</p>
