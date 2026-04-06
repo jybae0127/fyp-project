@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { logout } from "../services/api";
 
-const LOCAL_SERVER = "https://therapeutic-sell-mls-sends.trycloudflare.com"; // TODO: change back to "https://jobtracker-api.ddns.net" for production
+const LOCAL_SERVER = "https://cam-cleared-aquarium-feat.trycloudflare.com"; // TODO: change back to "https://jobtracker-api.ddns.net" for production
 
 export default function SettingsModal({ onClose, onSignOut }) {
   const [clearingCache, setClearingCache] = useState(false);
