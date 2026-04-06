@@ -27,8 +27,8 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.environ.get("REDIRECT_URI")
 
 # Azure OpenAI Configuration
-AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT", "https://api-iw.azure-api.net/sig-shared-jpeast/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview")
-AZURE_OPENAI_KEY = os.environ.get("AZURE_OPENAI_KEY", "72fc700a6bd24963b8e4cf5d28d4e95c")
+AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_KEY = os.environ.get("AZURE_OPENAI_KEY")
 AZURE_OPENAI_MODEL = "gpt-4o-mini"
 
 # Initialize Azure OpenAI client
