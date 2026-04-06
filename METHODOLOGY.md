@@ -34,7 +34,8 @@ The system tracks job applications through the following standardized pipeline s
 - Personalized job recommendations via Adzuna API
 - LinkedIn share button with auto-generated stats summary
 - AI chatbot assistant with application context
-- Performance analytics and weekly progress charts
+- Performance analytics (response rates, stage conversion, pending vs rejected)
+- Bottleneck Insights — auto-detects drop-off stage and links to HKU CEDARS resources (VMock, Aptitude Tests, DropPicker)
 
 **Deferred Features (Future Versions):**
 - Multi-email provider support (Outlook, Yahoo)
@@ -47,7 +48,7 @@ The system tracks job applications through the following standardized pipeline s
 **Data Stored:**
 | Data Type | Storage Location | Retention |
 |-----------|------------------|-----------|
-| OAuth tokens | Server-side (Render) | Session-based, cleared on logout |
+| OAuth tokens | Server-side (EC2) | Session-based, cleared on logout |
 | Extracted metadata | EC2 cache (JSON) | Permanent until manual clear |
 | Company names | EC2 cache | Permanent |
 | Stage classifications | EC2 cache | Permanent |
@@ -85,37 +86,43 @@ The system tracks job applications through the following standardized pipeline s
 │                              SYSTEM ARCHITECTURE                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌──────────────┐      ┌────────────────────────────────────────────────┐  │
-│  │   Frontend   │      │                  AWS EC2 t2.micro              │  │
-│  │   (React)    │      │  ┌─────────────────────────────────────────┐  │  │
-│  │   Vercel     │      │  │  nginx (ports 80/443, Let's Encrypt SSL) │  │  │
-│  │  - Dashboard │      │  │  jobtracker-auth.ddns.net → :5678       │  │  │
-│  │  - Charts    │◄────►│  │  jobtracker-api.ddns.net  → :5001       │  │  │
-│  │  - Timeline  │      │  └──────────┬──────────────────┬───────────┘  │  │
-│  │  - CV Upload │      │             │                  │               │  │
-│  │  - Job Recs  │      │  ┌──────────▼──────┐  ┌───────▼─────────────┐ │  │
-│  └──────────────┘      │  │ gmail_backend   │  │  local_server.py    │ │  │
-│                        │  │ (OAuth Handler) │  │  - Email Processing  │ │  │
-│                        │  │ - Gmail API     │  │  - AI Classification │ │  │
-│                        │  │ - Token Storage │  │  - Caching Layer     │ │  │
-│                        │  └──────────┬──────┘  │  - Job Search        │ │  │
-│                        │             │          │  - CV Analysis       │ │  │
-│                        └─────────────┼──────────┴──────────┬──────────┘  │
-│                                      │                      │              │
-│                             ┌────────▼────────┐   ┌────────▼────────┐     │
-│                             │   Google APIs   │   │   OpenAI API    │     │
-│                             │   (Gmail)       │   │  (GPT-4o-mini)  │     │
-│                             └─────────────────┘   └─────────────────┘     │
-│                                                                             │
+│  ┌──────────────┐      ┌───────────────────────┐   ┌─────────────────────┐ │
+│  │   Frontend   │      │    AWS EC2 t2.micro    │   │   Local Machine     │ │
+│  │   (React)    │      │  nginx + Let's Encrypt │   │  Cloudflare Tunnel  │ │
+│  │   Vercel     │      │  jobtracker-auth.ddns  │   │  *.trycloudflare    │ │
+│  │  - Dashboard │◄────►│  .net → :5678          │   │  .com → :5001       │ │
+│  │  - Funnel    │      │  gmail_backend.py       │   │  local_server_2.py  │ │
+│  │  - Timeline  │      │  - OAuth 2.0 PKCE      │   │  - Agentic Pipeline │ │
+│  │  - CV Upload │      │  - Gmail API queries   │   │  - Parallel GPT     │ │
+│  │  - Job Recs  │      │  - Token storage       │   │  - CV Analysis      │ │
+│  │  - Insights  │      └───────────┬────────────┘   │  - Job Search       │ │
+│  └──────────────┘                  │                 └──────────┬──────────┘ │
+│                                    │                            │             │
+│                           ┌────────▼────────┐       ┌──────────▼──────────┐ │
+│                           │   Google APIs   │       │ OpenAI + Adzuna API │ │
+│                           │   (Gmail)       │       │ (GPT-4o-mini)       │ │
+│                           └─────────────────┘       └─────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Processing Pipeline:**
+**Agentic Processing Pipeline (Sequential → Parallel → Sequential):**
 ```
-OAuth Login → Token Store → Cache Check →
-(Hit → Response) | (Miss → Gmail Query → Fetch Messages →
-Parse Headers → Extract Body → Layer A Filter → Layer B AI →
-Stage Classification → Company Grouping → Cache Write → SSE Response)
+[Sequential]
+  Step 1: OAuth Login → Token Store → Cache Check
+          (Cache Hit → Immediate Response)
+          (Cache Miss → continue)
+  Step 2: Gmail Query → Paginated email fetch
+  Step 3: Layer A Rule-Based Filter → eliminate non-job emails
+  Step 4: AI Agent → extract company names from email batch
+
+[Parallel — ThreadPoolExecutor(max_workers=10)]
+  Step 5: Per-company AI agents run concurrently:
+          Each agent: filter relevant emails → GPT-4o-mini → extract
+          position / stage / dates / status
+
+[Sequential]
+  Step 6: Merge results, deduplicate, resolve manual entries
+  Step 7: Cache write → SSE stream → Frontend render
 ```
 
 ### 2.2 Two-Layer Classification System
@@ -303,7 +310,7 @@ Analysis of 200+ recruitment emails from 50+ companies revealed common patterns:
 
 ### 4.1 Dashboard Components
 
-**Statistics Overview:** Total applications, active applications, interview rate, offer rate
+**Statistics Overview:** Total applications, had interviews, active applications
 
 **Sankey Diagram:** Visual flow from Application → various stages → Offer/Rejection
 
@@ -314,14 +321,23 @@ Assessment      ██████████████                28 (62
 Interview       ████████                      15 (33%)
 Offer           ██                             3 (7%)
 ```
+Color-coded by stage: blue=Applied, orange=Assessment, purple=Interview, green=Offer.
+Labels displayed outside bars. LinkedIn share button shown inline.
 
-**Timeline View:** Company-grouped application history with stage progression and dates
+**Timeline View:** Company-grouped application history with stage progression dots and rejected/active badges
 
-**Performance Analytics:** Weekly application activity, response rates, stage conversion rates
+**Performance Analytics:** Response rates, stage conversion rates, pending vs rejected breakdown
+
+**Bottleneck Insights:** Auto-detects the stage with highest drop-off (min threshold: 2 applications).
+Surfaces targeted HKU CEDARS resources:
+- No Response → VMock CV improvement
+- Failing Assessments → CEDARS Aptitude Test platform
+- Stuck at Video Interview → VMock mock interview
+- Not Converting Interviews → DropPicker alumni interview Q&A library
 
 **CV Analysis:** Upload PDF/DOCX CV → AI compares against application history → improvement suggestions
 
-**Job Recommendations:** Based on CV skills + application history → Adzuna API job search
+**Job Recommendations:** Based on CV skills + application history → Adzuna API job search with match scoring
 
 ### 4.2 Real-Time Progress Feedback
 
@@ -369,12 +385,13 @@ Step 5: "Building your dashboard..."
 Cloud Deployment:
 ├── Frontend (React/Vite) → Vercel (youraijobtracker.vercel.app)
 │     └── vercel.json: rewrites all routes → index.html (SPA routing)
-└── AWS EC2 t2.micro (3.27.96.124)
-      ├── nginx reverse proxy (ports 80/443) + Let's Encrypt SSL (certbot)
-      │     ├── jobtracker-auth.ddns.net → localhost:5678 (gmail_backend.py)
-      │     └── jobtracker-api.ddns.net  → localhost:5001 (local_server.py)
-      ├── Auth Server (gmail_backend.py) — Gmail OAuth 2.0
-      └── AI Processing Server (local_server.py) — email analysis, job recommendations
+├── AWS EC2 t2.micro
+│     ├── nginx reverse proxy (ports 80/443) + Let's Encrypt SSL (certbot)
+│     │     └── jobtracker-auth.ddns.net → localhost:5678 (gmail_backend.py)
+│     └── Auth Server (gmail_backend.py) — Gmail OAuth 2.0 PKCE
+└── Local Machine
+      ├── local_server_2.py (port 5001) — AI pipeline, job search, CV analysis
+      └── Cloudflare Tunnel → exposes :5001 as public HTTPS URL
 ```
 
 **Environment Variables:**
@@ -383,26 +400,29 @@ EC2 (~/.bashrc):
 - GOOGLE_CLIENT_ID
 - GOOGLE_CLIENT_SECRET
 - REDIRECT_URI (https://jobtracker-auth.ddns.net/callback)
+
+Local Machine:
 - OPENAI_API_KEY
+- ADZUNA_APP_ID / ADZUNA_APP_KEY
 
 Frontend (api.js):
-- RENDER_URL: https://jobtracker-auth.ddns.net
-- LOCAL_URL: https://jobtracker-api.ddns.net
+- RENDER_URL: https://jobtracker-auth.ddns.net  (EC2 auth server)
+- LOCAL_URL:  https://<tunnel>.trycloudflare.com  (local AI server)
 ```
 
-**EC2 Startup (after reboot):**
+**Server Startup:**
 ```bash
-# nginx starts automatically via systemd
-
-# Start AI processing server
-tmux new -s server
-cd ~/fyp-project/backend && python3 local_server.py
-# Ctrl+B D to detach
-
-# Start auth server
+# EC2 — nginx starts automatically via systemd
+# EC2 — start auth server
 tmux new -s auth
 cd ~/fyp-project/backend && python3 gmail_backend.py
-# Ctrl+B D to detach
+
+# Local machine — start AI processing server
+python3 backend/local_server_2.py
+
+# Local machine — start Cloudflare tunnel
+cloudflared tunnel --url http://localhost:5001
+# Copy the generated URL into frontend/src/services/api.js LOCAL_URL
 ```
 
 **Security Measures:**
@@ -423,6 +443,6 @@ This methodology describes a systematic approach to building an automated job ap
 2. **Pipeline Design** — Two-layer classification (rule-based + AI), incremental caching, parallel processing
 3. **Pattern Analysis** — Empirical email analysis, iterative rule development, edge case handling
 4. **Frontend Implementation** — Dashboard visualizations, CV analysis, job recommendations, LinkedIn sharing
-5. **Deployment** — Vercel (frontend) + Render (OAuth) + AWS EC2 + ngrok (HTTPS tunnel)
+5. **Deployment** — Vercel (frontend) + AWS EC2 (OAuth) + Cloudflare Tunnel (AI processing)
 
-The system prioritizes user privacy (read-only access, no raw storage), accuracy (two-layer classification), and performance (incremental caching, parallel AI processing).
+The system prioritizes user privacy (read-only Gmail access, no raw email storage), accuracy (two-layer classification with agentic parallel processing), and actionable feedback (bottleneck detection with HKU CEDARS resource integration).
