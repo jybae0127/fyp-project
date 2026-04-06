@@ -28,6 +28,7 @@ CORS(app)
 # Auth backend URL (EC2 nginx reverse proxy)
 # RENDER_URL = "https://gmail-login-backend.onrender.com"  # old Render URL
 RENDER_URL = "https://jobtracker-auth.ddns.net"
+INTERNAL_SECRET = os.environ.get("INTERNAL_SECRET")  # Shared secret with auth server
 
 # Adzuna Job Search API
 ADZUNA_APP_ID = "b252cd26"
@@ -587,7 +588,8 @@ def fetch_emails_from_render(query, max_loops=10):
             params["page_token"] = next_page
 
         print(f"  Fetching: {url}")
-        resp = requests.get(url, params=params, timeout=60)
+        headers = {"X-Internal-Secret": INTERNAL_SECRET} if INTERNAL_SECRET else {}
+        resp = requests.get(url, params=params, headers=headers, timeout=60)
         if resp.status_code != 200:
             print(f"  Error: {resp.status_code}")
             break

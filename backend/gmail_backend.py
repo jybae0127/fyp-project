@@ -25,6 +25,7 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.environ.get("REDIRECT_URI")
+INTERNAL_SECRET = os.environ.get("INTERNAL_SECRET")  # Shared secret with AI server
 
 # Azure OpenAI Configuration
 AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
@@ -391,6 +392,11 @@ def logout():
 
 @app.route('/query')
 def query():
+    if INTERNAL_SECRET:
+        token = request.headers.get("X-Internal-Secret")
+        if token != INTERNAL_SECRET:
+            return jsonify({"error": "Forbidden"}), 403
+
     q = request.args.get('q', 'in:inbox')
     page_token = request.args.get('page_token', None)
 
