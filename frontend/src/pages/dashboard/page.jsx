@@ -5,6 +5,7 @@ import SankeyDiagram from './components/SankeyDiagram';
 import ApplicationTimeline from './components/ApplicationTimeline';
 import ApplicationFunnel from './components/ApplicationFunnel';
 import PerformanceAnalytics from './components/PerformanceAnalytics';
+import BottleneckInsights from './components/BottleneckInsights';
 import ChatbotWidget from './components/ChatbotWidget';
 import EditApplicationModal from './components/EditApplicationModal';
 import AddApplicationModal from './components/AddApplicationModal';
@@ -33,7 +34,6 @@ export default function Dashboard() {
   const [cacheNotice, setCacheNotice] = useState({ show: false, fromCache: false, incremental: false });
   const [sessionExpired, setSessionExpired] = useState(false);
 
-  const [linkedInToast, setLinkedInToast] = useState(false);
 
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -427,7 +427,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
               <StatsOverview applications={applications} />
               <CVAnalysisCard />
               <JobRecommendationsCard />
@@ -436,10 +436,10 @@ export default function Dashboard() {
             <SankeyDiagram applications={applications} />
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 h-[640px] flex flex-col">
                 <ApplicationFunnel applications={applications} />
               </div>
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-3 h-[640px] flex flex-col">
                 <ApplicationTimeline
                   applications={applications}
                   onEdit={handleEditApplication}
@@ -450,37 +450,8 @@ export default function Dashboard() {
 
             <PerformanceAnalytics applications={applications} />
 
-            {/* LinkedIn Share */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center gap-3">
-              <p className="text-sm text-gray-500">Proud of your progress? Share your job search journey with your network.</p>
-              <button
-                onClick={() => {
-                  const total = applications.length;
-                  const interviews = applications.filter(a => a.interviews > 0).length;
-                  const offers = applications.filter(a => a.status === 'Offer').length;
-                  const year = new Date().getFullYear();
-                  const text = `🚀 My Job Search Journey ${year}\n\n📋 Applications: ${total}\n🤝 Interviews: ${interviews}\n🎉 Offers: ${offers}\n\nTracked with JobTracker AI #JobSearch #Hiring`;
-                  navigator.clipboard.writeText(text);
-                  window.open('https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fyouraijobtracker.vercel.app', '_blank');
-                  setLinkedInToast(true);
-                  setTimeout(() => setLinkedInToast(false), 5000);
-                }}
-                className="btn-shine inline-flex items-center gap-3 px-8 py-3 bg-[#0A66C2] text-white text-base font-semibold rounded-xl hover:bg-[#004182] transition-colors cursor-pointer"
-              >
-                <i className="ri-linkedin-fill text-xl"></i>
-                Share on LinkedIn
-              </button>
-              <p className="text-xs text-gray-400 flex items-center gap-1">
-                <i className="ri-clipboard-line"></i>
-                Your stats will be copied to clipboard — paste into the post
-              </p>
-              {linkedInToast && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg shadow-lg">
-                  <i className="ri-clipboard-line"></i>
-                  Text copied! Paste it into your LinkedIn post.
-                </div>
-              )}
-            </div>
+            <BottleneckInsights applications={applications} />
+
           </div>
         )}
       </main>

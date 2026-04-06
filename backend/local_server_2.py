@@ -1,10 +1,10 @@
 """
-AI processing server for JobTracker AI. Deployed on AWS EC2.
+Local processing server for JobTracker AI.
 Uses EXACT logic from firstfilter.py and secondfilter.py.
 - Fetches emails from Render's /query endpoint
-- Runs two-layer classification (rule-based + OpenAI GPT-4o-mini)
-- Returns processed data to frontend via ngrok HTTPS tunnel
-- JSON file caching with incremental date-range updates
+- Runs firstfilter + secondfilter logic locally
+- Returns processed data to frontend
+- JSON file caching with 24-hour TTL
 """
 import os
 import re
@@ -18,14 +18,15 @@ from flask_cors import CORS
 import queue
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from openai import OpenAI
+from openai import AzureOpenAI
 import PyPDF2
 from docx import Document
 
 app = Flask(__name__)
 CORS(app)
 
-# Render backend URL for fetching emails
+# Auth backend URL (EC2 nginx reverse proxy)
+# RENDER_URL = "https://gmail-login-backend.onrender.com"  # old Render URL
 RENDER_URL = "https://jobtracker-auth.ddns.net"
 
 # Adzuna Job Search API
@@ -223,9 +224,11 @@ def check_cache_coverage(user_email, requested_start, requested_end):
     print(f"   ⚠️ Complex cache gap - fetching full range")
     return None, None
 
-# OpenAI Configuration
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
+# Azure OpenAI Configuration (same as original scripts)
+client = AzureOpenAI(
+    azure_endpoint="https://api-iw.azure-api.net/sig-shared-jpeast/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
+    api_key="72fc700a6bd24963b8e4cf5d28d4e95c",
+    api_version="2025-01-01-preview"
 )
 MODEL = "gpt-4o-mini"
 
@@ -1723,26 +1726,22 @@ def search_jobs_combined(keywords, location="singapore", country="sg", page=1, r
 
 
 def extract_keywords_from_cv(cv_sections):
-    """Extract relevant keywords from CV sections for job search.
-    Prioritises job titles over raw skills since Adzuna searches job titles."""
+    """Extract relevant keywords from CV sections for job search."""
     keywords = []
     if not cv_sections:
         return keywords
 
-    # Job titles first — most useful for job-title search APIs
-    if cv_sections.get("experience"):
-        for exp in cv_sections["experience"][:3]:
-            if exp.get("title"):
-                keywords.append(exp["title"])
-
-    # Broad skill categories (not raw tool names)
     if cv_sections.get("skills"):
         skills = cv_sections["skills"]
         if skills.get("technical"):
-            # Only include multi-word or role-like skills, skip single tool names
-            for s in skills["technical"][:5]:
-                if len(s.split()) > 1 or s.lower() in ("finance", "marketing", "accounting", "consulting"):
-                    keywords.append(s)
+            keywords.extend(skills["technical"][:5])
+        if skills.get("tools"):
+            keywords.extend(skills["tools"][:3])
+
+    if cv_sections.get("experience"):
+        for exp in cv_sections["experience"][:2]:
+            if exp.get("title"):
+                keywords.append(exp["title"])
 
     return keywords
 
@@ -1778,7 +1777,7 @@ def calculate_job_match_score(job, cv_sections, applications, target_roles=None)
     job_company = (company.get("display_name") if isinstance(company, dict) else company or "").lower()
 
     # Check skill matches
-    if cv_sections and cv_sections.get("skills"):
+    if cv_sections.get("skills"):
         skills = cv_sections["skills"]
         all_skills = []
         if skills.get("technical"):
@@ -1796,7 +1795,7 @@ def calculate_job_match_score(job, cv_sections, applications, target_roles=None)
             reasons.append(f"Matches your skills: {', '.join(matched_skills[:3])}")
 
     # Check experience alignment
-    if cv_sections and cv_sections.get("experience"):
+    if cv_sections.get("experience"):
         for exp in cv_sections["experience"]:
             exp_title = (exp.get("title") or "").lower()
             if any(word in job_title for word in exp_title.split() if len(word) > 3):
@@ -1974,21 +1973,6 @@ def recommend_jobs():
                     all_jobs.append(job)
 
         raw_jobs = all_jobs[:20]  # Limit to 20 total
-
-        # Fallback: if no jobs found with extracted keywords, try generic terms
-        if not raw_jobs:
-            fallback_keywords = target_roles[:2] if target_roles else ["software engineer", "analyst"]
-            print(f"No results with extracted keywords, falling back to: {fallback_keywords}")
-            for keyword in fallback_keywords:
-                results = search_jobs_combined(keyword, location, country, page=1, results_per_page=10)
-                for job in results.get("results", []):
-                    job_id = job.get("id") or job.get("title", "")
-                    if job_id not in seen_ids:
-                        seen_ids.add(job_id)
-                        all_jobs.append(job)
-            raw_jobs = all_jobs[:20]
-            if raw_jobs:
-                keywords = fallback_keywords
 
         if not raw_jobs:
             return jsonify({

@@ -8,9 +8,6 @@ export default function StatsOverview({ applications }) {
   const hadInterviews = applications.filter(app => app.interviews > 0).length;
   const offerReceived = applications.filter(app => app.status === 'Offer').length;
 
-  const conversionRate = totalApplications > 0 ?
-    Math.round((hadInterviews / totalApplications) * 100) : 0;
-
   const stats = [
     {
       title: 'Total Applications',
@@ -21,14 +18,6 @@ export default function StatsOverview({ applications }) {
       textColor: 'text-blue-600'
     },
     {
-      title: 'Active Applications',
-      value: activeApplications,
-      icon: 'ri-time-line',
-      color: 'from-orange-500 to-orange-600',
-      bgColor: 'bg-orange-50',
-      textColor: 'text-orange-600'
-    },
-    {
       title: 'Had Interviews',
       value: hadInterviews,
       icon: 'ri-user-voice-line',
@@ -37,13 +26,13 @@ export default function StatsOverview({ applications }) {
       textColor: 'text-green-600'
     },
     {
-      title: 'Conversion Rate',
-      value: `${conversionRate}%`,
-      icon: 'ri-line-chart-line',
-      color: 'from-purple-500 to-purple-600',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-600'
-    }
+      title: 'Active Applications',
+      value: activeApplications,
+      icon: 'ri-time-line',
+      color: 'from-orange-500 to-orange-600',
+      bgColor: 'bg-orange-50',
+      textColor: 'text-orange-600'
+    },
   ];
 
   return (

@@ -19,9 +19,10 @@ export default function PerformanceAnalytics({ applications }) {
     Math.round((offerCount / hadInterviewCount) * 100) : 0;
   const successRate = totalApplications > 0 ?
     Math.round((offerCount / totalApplications) * 100) : 0;
-  // Response = got interview OR offer OR rejection (any response from company)
+  // Response = any application that moved past "Applied" stage (no double-counting)
+  const gotResponse = applications.filter(app => app.status !== 'Applied').length;
   const responseRate = totalApplications > 0 ?
-    Math.round(((hadInterviewCount + offerCount + rejectionCount) / totalApplications) * 100) : 0;
+    Math.round((gotResponse / totalApplications) * 100) : 0;
 
   // Calculate average response time (days between appliedDate and lastUpdate)
   const responseTimes = [];
@@ -75,7 +76,7 @@ export default function PerformanceAnalytics({ applications }) {
     {
       title: 'Response Rate',
       value: `${responseRate}%`,
-      description: `${hadInterviewCount + offerCount + rejectionCount} responded out of ${totalApplications}`,
+      description: `${gotResponse} responded out of ${totalApplications}`,
       color: 'from-orange-500 to-orange-600'
     },
     {
@@ -105,7 +106,7 @@ export default function PerformanceAnalytics({ applications }) {
     insights.push({
       type: 'tip',
       title: 'Low Response Rate',
-      message: `Only ${responseRate}% of your applications received responses. Consider tailoring your resume more specifically to each role.`
+      message: `Only ${responseRate}% of your applications got a response. Consider tailoring your CV more specifically to each role.`
     });
   }
 
@@ -181,61 +182,23 @@ export default function PerformanceAnalytics({ applications }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Progress</h3>
-          {weeklyData.length > 0 ? (
-            <div className="space-y-3">
-              {weeklyData.map((week, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                  <span className="text-sm font-medium text-gray-700">{week.week}</span>
-                  <div className="flex items-center space-x-4 text-sm">
-                    <span className="flex items-center text-blue-600">
-                      <i className="ri-send-plane-line mr-1"></i>
-                      {week.applications}
-                    </span>
-                    <span className="flex items-center text-purple-600">
-                      <i className="ri-user-voice-line mr-1"></i>
-                      {week.interviews}
-                    </span>
-                    <span className="flex items-center text-green-600">
-                      <i className="ri-gift-line mr-1"></i>
-                      {week.offers}
-                    </span>
-                    <span className="flex items-center text-red-600">
-                      <i className="ri-close-circle-line mr-1"></i>
-                      {week.rejections}
-                    </span>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Insights</h3>
+        <div className="space-y-4">
+          {insights.slice(0, 3).map((insight, index) => {
+            const style = insightStyles[insight.type];
+            return (
+              <div key={index} className={`p-4 rounded-lg ${style.bg} border ${style.border}`}>
+                <div className="flex items-start space-x-3">
+                  <i className={`${style.icon} ${style.iconColor} text-lg mt-0.5`}></i>
+                  <div>
+                    <h4 className={`text-sm font-semibold ${style.titleColor}`}>{insight.title}</h4>
+                    <p className={`text-sm ${style.textColor} mt-1`}>{insight.message}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <i className="ri-bar-chart-line text-4xl text-gray-300 mb-2"></i>
-              <p>No weekly data available yet</p>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Insights</h3>
-          <div className="space-y-4">
-            {insights.slice(0, 3).map((insight, index) => {
-              const style = insightStyles[insight.type];
-              return (
-                <div key={index} className={`p-4 rounded-lg ${style.bg} border ${style.border}`}>
-                  <div className="flex items-start space-x-3">
-                    <i className={`${style.icon} ${style.iconColor} text-lg mt-0.5`}></i>
-                    <div>
-                      <h4 className={`text-sm font-semibold ${style.titleColor}`}>{insight.title}</h4>
-                      <p className={`text-sm ${style.textColor} mt-1`}>{insight.message}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

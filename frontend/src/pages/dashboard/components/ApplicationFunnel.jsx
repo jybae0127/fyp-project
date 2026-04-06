@@ -1,4 +1,19 @@
+import { useState } from 'react';
+
 export default function ApplicationFunnel({ applications }) {
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const shareOnLinkedIn = () => {
+    const total = applications.length;
+    const interviews = applications.filter(a => a.interviews > 0).length;
+    const offers = applications.filter(a => a.status === 'Offer').length;
+    const year = new Date().getFullYear();
+    const text = `🚀 My Job Search Journey ${year}\n\n📋 Applications: ${total}\n🤝 Interviews: ${interviews}\n🎉 Offers: ${offers}\n\nTracked with JobTracker AI #JobSearch #Hiring`;
+    navigator.clipboard.writeText(text);
+    window.open('https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fyouraijobtracker.vercel.app', '_blank');
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 4000);
+  };
   const total = applications.length;
 
   // Calculate funnel stages (cumulative - each stage includes those who passed through)
@@ -56,13 +71,13 @@ export default function ApplicationFunnel({ applications }) {
 
   // Calculate width percentages for visual funnel
   const getWidthStyle = (rate) => {
-    const minWidth = 25;
+    const minWidth = 15;
     const width = Math.max(rate, minWidth);
     return { width: `${width}%` };
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+    <div className="relative bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-full">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Application Funnel</h2>
         <div className="flex items-center text-sm text-gray-500">
@@ -82,39 +97,59 @@ export default function ApplicationFunnel({ applications }) {
           <div className="space-y-3 mb-6">
             {funnelStages.map((stage, index) => (
               <div key={stage.name} className="relative">
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
+                  {/* Label on the left */}
+                  <div className="w-24 flex-shrink-0 flex items-center justify-end space-x-1.5 text-gray-600">
+                    <i className={`${stage.icon} text-sm`}></i>
+                    <span className="text-sm font-medium">{stage.name}</span>
+                  </div>
                   {/* Funnel bar */}
                   <div
-                    className={`${stage.color} h-12 rounded-lg flex items-center justify-between px-4 transition-all duration-500 mx-auto`}
+                    className={`${stage.color} h-10 rounded-lg flex items-center justify-end px-3 transition-all duration-500`}
                     style={getWidthStyle(stage.rate)}
                   >
-                    <div className="flex items-center space-x-2 text-white">
-                      <i className={`${stage.icon} text-lg`}></i>
-                      <span className="font-medium text-sm">{stage.name}</span>
-                    </div>
-                    <div className="text-white font-bold">
+                    <div className="text-white font-bold text-sm">
                       {stage.count}
                     </div>
                   </div>
                 </div>
 
-                {/* Conversion arrow between stages */}
+                {/* Connector between stages */}
                 {index < funnelStages.length - 1 && (
-                  <div className="flex justify-center my-1">
-                    <div className="flex items-center text-xs text-gray-400">
-                      <i className="ri-arrow-down-s-line"></i>
-                      <span className="mx-1">
-                        {index === 0 && `${assessmentRate}%`}
-                        {index === 1 && `${assessmentToInterview}%`}
-                        {index === 2 && `${interviewToOffer}%`}
-                      </span>
-                      <i className="ri-arrow-down-s-line"></i>
-                    </div>
+                  <div className="flex my-0.5">
+                    <div className="w-24 flex-shrink-0"></div>
+                    <i className="ri-arrow-down-s-line text-gray-300 text-sm ml-2"></i>
                   </div>
                 )}
               </div>
             ))}
           </div>
+
+          {/* LinkedIn Share — always shown */}
+          {total > 0 && (
+            <div className={`mb-4 p-3 rounded-xl flex items-center justify-between ${gotOffer > 0 ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}>
+              <div>
+                <p className={`text-sm font-semibold ${gotOffer > 0 ? 'text-green-800' : 'text-blue-800'}`}>
+                  {gotOffer > 0 ? 'Proud of your progress? 🎉' : 'Share your job search journey'}
+                </p>
+                <p className={`text-xs mt-0.5 ${gotOffer > 0 ? 'text-green-600' : 'text-blue-600'}`}>
+                  {gotOffer > 0 ? 'Share your job search journey with your network.' : 'Let your network know you\'re on the hunt.'}
+                </p>
+              </div>
+              <button
+                onClick={shareOnLinkedIn}
+                className="ml-4 flex-shrink-0 flex items-center px-3 py-1.5 bg-[#0077B5] text-white text-xs font-semibold rounded-lg hover:bg-[#005f91] transition-colors cursor-pointer"
+              >
+                <i className="ri-linkedin-fill mr-1.5 text-sm"></i>
+                Share
+              </button>
+              {toastVisible && (
+                <div className="absolute right-6 bottom-6 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg">
+                  Stats copied! LinkedIn post opened.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Stats Summary */}
           <div className="grid grid-cols-2 gap-3 mb-4">

@@ -43,7 +43,7 @@ export default function ApplicationTimeline({ applications, onEdit, onAdd }) {
   );
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Application Journey</h2>
         <div className="flex items-center space-x-3">
@@ -71,7 +71,7 @@ export default function ApplicationTimeline({ applications, onEdit, onAdd }) {
         </div>
       </div>
 
-      <div className="space-y-3 max-h-[460px] overflow-y-auto">
+      <div className="space-y-3 flex-1 min-h-0 overflow-y-auto">
         {sortedApplications.map((application) => {
           const { index: currentStage, rejected } = getStageIndex(application);
 
