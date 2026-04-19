@@ -1,6 +1,6 @@
 // EC2 (nginx) for OAuth, EC2 (nginx) for heavy processing
 const RENDER_URL = "https://jobtracker-auth.ddns.net";
-const LOCAL_URL = "https://cam-cleared-aquarium-feat.trycloudflare.com"; // TODO: change back to "https://jobtracker-api.ddns.net" for production
+const LOCAL_URL = "https://jobtracker-api.ddns.net";
 
 /**
  * Check if the backend is authenticated with Gmail
