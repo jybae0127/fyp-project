@@ -95,10 +95,15 @@ export default function Hero() {
             )}
           </button>
 
-          <button className="btn-shine px-6 py-3 border border-gray-300 text-gray-700 text-lg font-semibold rounded-xl transition-all duration-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md hover:scale-105 hover:-translate-y-1">
+          <a
+            href="https://youtu.be/MlI-6TIuDHw"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-shine px-6 py-3 border border-gray-300 text-gray-700 text-lg font-semibold rounded-xl transition-all duration-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md hover:scale-105 hover:-translate-y-1 inline-flex items-center"
+          >
             <i className="ri-play-circle-line mr-2"></i>
             Watch Demo
-          </button>
+          </a>
         </div>
 
         {/* Trust indicators */}
